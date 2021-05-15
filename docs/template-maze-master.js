@@ -1,10 +1,9 @@
 return {
-    generateMaze: size => {
+    generateMaze: size =>
         Array(size).map(
             r => Array(size).map(
-                c => {east: false, south: false}
+                c => ({east: false, south: false})
             )
-        )
-    }
+        ),
     takeTurn: (mana, maze) => [null, null]
 }

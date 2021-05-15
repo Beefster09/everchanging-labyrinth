@@ -4,16 +4,39 @@
     <meta charset="UTF-8">
     <title>The Ever-Changing Labyrinth</title>
     <script src="controller.js"></script>
+    <script src="interactive.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body onload="initGame()">
+<body onload="initPage()">
     <div>
         <canvas id="viewport" height="600" width="600" />
     </div>
-    <div>
+    <div id="game-controls">
+        <label for="delay-control">Delay</label>
+        <input id="delay-control" type="number" min="0" max="10000" step="10" value="50">ms
+        <input id="pause-play" type="button" value="Pause/Play">
+        <input id="step-btn" type="button" value="Step">
+    </div>
+    <div id="single-game">
+        <h2>Start Single Game</h2>
+
+        <label for="adv-selector">Adventurer</label>
+        <select name="adventurer" id="adv-selector">
+            <option value=''><i>&lt;New Challenger&gt;</i></option>
+        </select>
+
+        <label name="mazemaster" for="mm-selector">Maze Master</label>
+        <select id="mm-selector">
+            <option value=''><i>&lt;New Challenger&gt;</i></option>
+        </select>
+
         <label for="seed-input">Seed:</label>
-        <input id="seed-input" type="text" placeholder="<seed>">
-        <input id="start-button" type="button" value="Start">
+        <input id="seed-input" type="text" placeholder="<random>">
+        <input id="random-seed" type="button" value="Random Seed" onclick="document.getElementById('seed-input').value = genRandomSeed();" >
+        <input id="start-button" type="button" value="Start" >
+    </div>
+    <div id="tournament-controls">
+        Tournament not yet implemented
     </div>
     <div id="new-challengers">
         <div id="new-adv" class="new-challenger">

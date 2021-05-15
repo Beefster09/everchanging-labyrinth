@@ -92,6 +92,17 @@ const ADV_ACTIONS = {
 const TURNS_PER_ROUND = 1000;
 const SCORE_PER_COMPLETED_MAZE = 1000;
 
+function wrapBot(thunk, name) {
+    const before = performance.now();
+    try {
+        var ret = thunk();
+    }
+    catch (err) {
+        throw new DisqualifyError(`${err.name} in ${name}: ${err.message}`, name);
+    }
+    return [ret, performance.now() - before];
+}
+
 class Game {
     constructor(mmFactory, advFactory, randomSeed) {
         if (!randomSeed) {
@@ -114,17 +125,16 @@ class Game {
         this.turnNumber = undefined;
 
         this.score = 0;
-        this.next = this.startRound;
+        this.dirty = true;
     }
 
     // startRound and doTurn return the next function to call to advance the game by one step... for now
 
     startRound() {
+        this.dirty = true;
         this.mazeSize++;
-        const beforeGen = Performance.now();
-        const returnedBoard = this.mmBot.generateMaze(this.mazeSize);
-        const genDuration = Performance.now() - beforeGen;
         const mmTimeLimit = this.mazeSize * this.mazeSize * GEN_COMPUTE_FACTOR;
+        const [returnedBoard, genDuration] = wrapBot(() => this.mmBot.generateMaze(this.mazeSize), this.mmBotName);
         if (genDuration > mmTimeLimit) {
             throw new DisqualifyError(
                 `${this.mmBotName}.generateMaze() took too long to execute (time limit is ${mmTimeLimit}ms)`
@@ -150,24 +160,6 @@ class Game {
                 )
             }
             return row.map((cell, cellIndex) => {
-                // if ( !(cell.east === true || cell.east === false || cellIndex + 1 == this.mazeSize && cell.east == null) ) {
-                //     throw new DisqualifyError(
-                //         `Cell at row ${rowIndex}, column ${colIndex}`
-                //         + ` of maze returned by ${this.mmBotName}.generateMaze()`
-                //         + ` does not define a valid east wall (got ${cell.east})\n`
-                //         + JSON.stringify(returnedBoard, null, '\t'),
-                //         this.mmBotName
-                //     );
-                // }
-                // if ( !(cell.south === true || cell.south === false || rowIndex + 1 == this.mazeSize && cell.south == null) ) {
-                //     throw new DisqualifyError(
-                //         `Cell at row ${rowIndex}, column ${colIndex}`
-                //         + ` of maze returned by ${this.mmBotName}.generateMaze()`
-                //         + ` does not define a valid south wall (got ${cell.south})\n`
-                //         + JSON.stringify(returnedBoard, null, '\t'),
-                //         this.mmBotName
-                //     );
-                // }
                 return {
                     east: (cellIndex + 1 == this.mazeSize)? !!cell.east : null,
                     eastChangeCount: 0,
@@ -177,10 +169,7 @@ class Game {
             })
         });
 
-
-        let beforeAdv = Performance.now();
-        this.advBot.startRound(this.mazeSize);
-        let advDuration = Performance.now() - beforeAdv;
+        const advDuration = wrapBot(() => this.advBot.startRound(this.mazeSize), this.advBotName)[1];
         if (advDuration > ADV_START_ROUND_COMPUTE) {
             throw new DisqualifyError(
                 `${this.advBotName}.startRound() took too long to execute (time limit is ${ADV_START_ROUND_COMPUTE}ms)`,
@@ -205,16 +194,17 @@ class Game {
             },
         ];
 
-        return this.doTurn
+        return this.doTurn.bind(this)
     }
 
     doTurn() {
+        this.dirty = true;
         this.turnNumber++;
+        // console.log("Turn " + this.turnNumber);
 
         const vision = this.adv.map(this.calculateVision);
-        const beforeMove = Performance.now();
-        const moves = this.advBot.takeTurn(vision);
-        this.advCompute += TURN_COMPUTE - (Performance.now() - beforeMove);
+        const [moves, advTime] = wrapBot(() => this.advBot.takeTurn(vision), this.advBotName);
+        this.advCompute += TURN_COMPUTE - advTime;
         if (this.advCompute < 0) {
             throw new DisqualifyError(
                 `${this.advBotName} exceeded its compute quota`,
@@ -228,7 +218,8 @@ class Game {
 
         if (this.adv.some(({row, col}) => row + 1 == this.boardSize && col + 1 == this.boardSize)) {
             // Adventurers win! Onto the next maze!
-            return this.startRound
+            this.score += SCORE_PER_COMPLETED_MAZE;
+            return this.startRound.bind(this)
         }
         else if (this.turnNumber >= TURNS_PER_ROUND) {
             // GAME OVER
@@ -247,21 +238,47 @@ class Game {
                     })
                 )
             );
-            const beforeChange = Performance.now();
-            const [removeWall, addWall] = this.mmBot.takeTurn(this.mmMana, mazeWithCost);
-            this.mmCompute += TURN_COMPUTE - (Performance.now() - beforeChange);
+            const [[removeWall, addWall], mmTime] = wrapBot(
+                () => this.mmBot.takeTurn(this.mmMana, mazeWithCost),
+                this.mmBotName
+            );
+            this.mmCompute += TURN_COMPUTE - mmTime;
             if (this.mmCompute < 0) {
                 throw new DisqualifyError(
                     `${this.mmBotName} exceeded its compute quota`,
                     this.mmBotName
                 );
             }
-            return this.doTurn
+
+            // blah
+
+            return this.doTurn.bind(this)
         }
     }
 
-    run() {
-        //
+    start(scheduler) {
+        let game = this;
+        scheduler ??= setTimeout;  // full-speed execution by default
+
+        return new Promise((resolve, reject) => {
+            function engine(step) {
+                return () => {
+                    try {
+                        const next = step();
+                        if (next) {
+                            scheduler(engine(next));
+                        }
+                        else {
+                            resolve(game);
+                        }
+                    }
+                    catch (err) {
+                        reject(err);
+                    }
+                };
+            }
+            engine(this.startRound.bind(this))();
+        });
     }
 
     calculateVision(location) {
@@ -272,6 +289,21 @@ class Game {
         }
 
     }
+
+    render(canvasDims, drawCtx, turnCounter, scoreElement) {
+        if (!this.dirty) return;
+        this.dirty = false;
+
+        if (turnCounter) {
+            turnCounter.text = this.turnNumber;
+        }
+        if (scoreElement) {
+            scoreElement.text = this.score;
+        }
+
+        const [height, width] = canvasDims;
+
+    }
 }
 
 const BOT_HEADER = // Code header to make most obvious rulebreaking less convenient
@@ -280,7 +312,7 @@ let self = undefined;
 const window = undefined;
 const globalThis = undefined;
 const document = undefined;
-const Math = Object.create(Math);
+Math = Object.create(Math);
 Math.random = random;
 `;
 const MAZE_MASTER = 0;
@@ -298,7 +330,15 @@ class GameManager {
     }
 
     addBot(type, name, sourceCode) {
-        let factory = new Function('random', BOT_HEADER + sourceCode);
+        const concatenated = BOT_HEADER + sourceCode;
+        let factory = undefined;
+        try {
+            factory = new Function('random', concatenated);
+        }
+        catch (err) {
+            console.log(concatenated);
+            throw err;
+        }
         factory.botName = name;
         switch(type.replace(/[ _-]/, '').toLowerCase()) {
             case 'adventurer':
@@ -313,27 +353,8 @@ class GameManager {
         }
     }
 
-    runGame(mmName, advName, seed) {
-        let game = new Game(this.bots[MAZE_MASTER][mmName], this.bots[ADVENTURERS][advName], seed)
+    startGame(mmName, advName, seed, scheduler) {
+        let game = new Game(this.bots[MAZE_MASTER][mmName], this.bots[ADVENTURERS][advName], seed);
+        return game.start(scheduler);
     }
-}
-
-function initGame() {
-    let canvas = document.getElementById('viewport');
-    let {width, height} = canvas;
-    let ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = '#ccc';
-    ctx.fillRect(0, 0, width, height);
-
-    let manager = new GameManager();
-    let seedInput = document.getElementById('seed-input');
-    let startButton = document.getElementById('start-button');
-}
-
-
-function loadSourceInto(sourceURL, destElement) {
-    fetch(sourceURL, {}).then(resp => {
-        if (resp.ok) resp.text().then(src => {destElement.value = src})
-    })
 }
