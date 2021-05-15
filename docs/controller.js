@@ -62,7 +62,7 @@ const fib = function () {
 
 // And onto game-specific classes and such
 
-class DisqualifyError extends Error {
+class Strike extends Error {
     constructor(message, who) {
         super(message);
         this.who = who;
@@ -92,13 +92,46 @@ const ADV_ACTIONS = {
 const TURNS_PER_ROUND = 1000;
 const SCORE_PER_COMPLETED_MAZE = 1000;
 
+const MAZE_STYLE = {
+    // colors
+    colors: {
+        background: '#F5F5F5',
+        border: '#212121',
+        walls: '#424242',
+        grid: '#BDBDBD',
+
+        adv1: '#f44336',
+        adv1Stroke: '#b71c1c',
+        adv2VisibleCell: '#ffcdd2',
+        adv2VisibleWall: '#c62828',
+
+        adv2: '#2196F3',
+        adv2Stroke: '#0D47A1',
+        adv2VisibleCell: '#BBDEFB',
+        adv2VisibleWall: '#1565C0',
+
+        advBothVisibleCell: '#E1BEE7',
+        advBothVisibleWall: '#6A1B9A',
+
+        addedWall: '#2E7D32',
+        removedWall: '#FFCA28',
+    },
+    lines: {
+        border: 4,
+        walls: 2,
+        grid: 1,
+        adv: 2,
+    },
+    padding: 20
+};
+
 function wrapBot(thunk, name) {
     const before = performance.now();
     try {
         var ret = thunk();
     }
     catch (err) {
-        throw new DisqualifyError(`${err.name} in ${name}: ${err.message}`, name);
+        throw new Strike(`${err.name} in ${name}: ${err.message}`, name);
     }
     return [ret, performance.now() - before];
 }
@@ -126,6 +159,8 @@ class Game {
 
         this.score = 0;
         this.dirty = true;
+
+        this.lastActions = undefined;
     }
 
     // startRound and doTurn return the next function to call to advance the game by one step... for now
@@ -136,13 +171,13 @@ class Game {
         const mmTimeLimit = this.mazeSize * this.mazeSize * GEN_COMPUTE_FACTOR;
         const [returnedBoard, genDuration] = wrapBot(() => this.mmBot.generateMaze(this.mazeSize), this.mmBotName);
         if (genDuration > mmTimeLimit) {
-            throw new DisqualifyError(
+            throw new Strike(
                 `${this.mmBotName}.generateMaze() took too long to execute (time limit is ${mmTimeLimit}ms)`
             )
         }
 
         if (returnedBoard.length != this.mazeSize) {
-            throw new DisqualifyError(
+            throw new Strike(
                 `Maze returned by ${this.mmBotName}.generateMaze() has an incorrect number of rows.`
                 + ` (Expected ${this.mazeSize} rows, got ${returnedBoard.length} rows)\n`
                 + JSON.stringify(returnedBoard, null, '\t'),
@@ -152,7 +187,7 @@ class Game {
 
         this.maze = returnedBoard.map((row, rowIndex) => {
             if (row.length != this.mazeSize) {
-                throw new DisqualifyError(
+                throw new Strike(
                     `Row ${rowIndex} of maze returned by ${this.mmBotName}.generateMaze() has an incorrect number of cells.`
                     + ` (Expected ${this.mazeSize} cells, got ${row.length} cells)\n`
                     + JSON.stringify(returnedBoard, null, '\t'),
@@ -160,18 +195,32 @@ class Game {
                 )
             }
             return row.map((cell, cellIndex) => {
+                if (cellIndex + 1 < this.mazeSize && !cell.hasOwnProperty('east')) {
+                    throw new Strike("bleh", this.mmBotName);
+                }
+                if (rowIndex + 1 < this.mazeSize && !cell.hasOwnProperty('south')) {
+                    throw new Strike("bleh", this.mmBotName);
+                }
                 return {
-                    east: (cellIndex + 1 == this.mazeSize)? !!cell.east : null,
+                    east: (cellIndex + 1 < this.mazeSize)? !!cell.east : null,
                     eastChangeCount: 0,
-                    south: (rowIndex + 1 == this.mazeSize)? !!cell.south : null,
+                    south: (rowIndex + 1 < this.mazeSize)? !!cell.south : null,
                     southChangeCount: 0,
                 }
             })
         });
 
+        if (!this.mazeIsFullyConnected()) {
+            throw new Strike(
+                `Maze returned by ${this.mmBotName}.generateMaze() is not fully-connected\n`
+                + JSON.stringify(returnedBoard, null, '\t'),
+                this.mmBotName
+            );
+        }
+
         const advDuration = wrapBot(() => this.advBot.startRound(this.mazeSize), this.advBotName)[1];
         if (advDuration > ADV_START_ROUND_COMPUTE) {
-            throw new DisqualifyError(
+            throw new Strike(
                 `${this.advBotName}.startRound() took too long to execute (time limit is ${ADV_START_ROUND_COMPUTE}ms)`,
                 this.advBotName
             );
@@ -200,29 +249,32 @@ class Game {
     doTurn() {
         this.dirty = true;
         this.turnNumber++;
-        // console.log("Turn " + this.turnNumber);
 
         const vision = this.adv.map(this.calculateVision);
         const [moves, advTime] = wrapBot(() => this.advBot.takeTurn(vision), this.advBotName);
         this.advCompute += TURN_COMPUTE - advTime;
         if (this.advCompute < 0) {
-            throw new DisqualifyError(
+            throw new Strike(
                 `${this.advBotName} exceeded its compute quota`,
                 this.advBotName
             );
         }
 
-        // TODO: process move
+        for (let move of moves) {
+
+        }
 
         this.score--;
 
         if (this.adv.some(({row, col}) => row + 1 == this.boardSize && col + 1 == this.boardSize)) {
             // Adventurers win! Onto the next maze!
             this.score += SCORE_PER_COMPLETED_MAZE;
+            this.lastActions = [...moves, null, null];
             return this.startRound.bind(this)
         }
         else if (this.turnNumber >= TURNS_PER_ROUND) {
             // GAME OVER
+            this.lastActions = [...moves, null, null];
             return null
         }
         else {
@@ -244,13 +296,21 @@ class Game {
             );
             this.mmCompute += TURN_COMPUTE - mmTime;
             if (this.mmCompute < 0) {
-                throw new DisqualifyError(
+                throw new Strike(
                     `${this.mmBotName} exceeded its compute quota`,
                     this.mmBotName
                 );
             }
 
-            // blah
+            if (!this.mazeIsFullyConnected()) {
+                throw new Strike(
+                    `Maze modified by ${this.mmBotName}.takeTurn() is not fully-connected\n`
+                    + JSON.stringify(returnedBoard, null, '\t'),
+                    this.mmBotName
+                );
+            }
+
+            this.lastActions = [...moves, removeWall, addWall];
 
             return this.doTurn.bind(this)
         }
@@ -290,8 +350,32 @@ class Game {
 
     }
 
-    render(canvasDims, drawCtx, turnCounter, scoreElement) {
-        if (!this.dirty) return;
+    mazeIsFullyConnected() {
+        try {
+            const size = this.mazeSize;
+            const maze = this.maze;
+            let visited = [...Array(size)].map(r => [...Array(size)]);
+            let markCount = 0;
+            function checkCell(row, col) {
+                if (visited[row][col]) return;
+                visited[row][col] = true;
+                markCount++;
+                if (row < size - 1 && !maze[row][col].south)     checkCell(row + 1, col);
+                if (row > 0        && !maze[row - 1][col].south) checkCell(row - 1, col);
+                if (col < size - 1 && !maze[row][col].east)      checkCell(row, col + 1);
+                if (col > 0        && !maze[row][col - 1].east)  checkCell(row, col - 1);
+            }
+            checkCell(0, 0);
+            return markCount == this.mazeSize * this.mazeSize;
+        }
+        catch (err) {
+            console.error(err);
+            return false;
+        }
+    }
+
+    render(canvasDims, drawCtx, turnCounter, scoreElement, force) {
+        if (!this.dirty && !force) return;
         this.dirty = false;
 
         if (turnCounter) {
@@ -301,14 +385,60 @@ class Game {
             scoreElement.text = this.score;
         }
 
-        const [height, width] = canvasDims;
+        const [fullWidth, fullHeight] = canvasDims;
 
+        const outerSize = Math.min(fullHeight, fullWidth);
+        const innerSize = outerSize - 2 * MAZE_STYLE.padding;
+        const cellSize = innerSize / this.mazeSize;
+        const left = fullWidth / 2 - outerSize / 2 + MAZE_STYLE.padding;
+        const top = fullHeight / 2 - outerSize / 2 + MAZE_STYLE.padding;
+        const right = left + innerSize;
+        const bottom = top + innerSize;
+
+        // Fill in the background
+        drawCtx.fillStyle = MAZE_STYLE.colors.background;
+        drawCtx.fillRect(0, 0, fullWidth, fullHeight);
+
+        // Draw the grid lines
+        drawCtx.strokeStyle = MAZE_STYLE.colors.grid;
+        drawCtx.lineWidth = MAZE_STYLE.lines.grid;
+
+        drawCtx.beginPath();
+        for (let i = 1; i < this.mazeSize; i++) {
+            drawCtx.moveTo(left + i * cellSize, top);
+            drawCtx.lineTo(left + i * cellSize, bottom);
+            drawCtx.moveTo(left, top + i * cellSize);
+            drawCtx.lineTo(right, top + i * cellSize);
+        }
+        drawCtx.stroke();
+
+        drawCtx.strokeStyle = MAZE_STYLE.colors.walls;
+        drawCtx.lineWidth = MAZE_STYLE.lines.walls;
+        drawCtx.beginPath();
+        this.maze.forEach((row, rowIndex) => {
+            row.forEach((cell, colIndex) => {
+                if (cell.east) {
+                    drawCtx.moveTo(left + (colIndex + 1) * cellSize, top + rowIndex * cellSize);
+                    drawCtx.lineTo(left + (colIndex + 1) * cellSize, top + (rowIndex + 1) * cellSize);
+                }
+                if (cell.south) {
+                    drawCtx.moveTo(left + colIndex * cellSize, top + (rowIndex + 1) * cellSize)
+                    drawCtx.lineTo(left + (colIndex + 1) * cellSize, top + (rowIndex + 1) * cellSize);
+                }
+            })
+        })
+        drawCtx.stroke();
+
+        // Finally, draw the border
+        drawCtx.strokeStyle = MAZE_STYLE.colors.border;
+        drawCtx.lineWidth = MAZE_STYLE.lines.border;
+        drawCtx.strokeRect(left, top, innerSize, innerSize);
     }
 }
 
 const BOT_HEADER = // Code header to make most obvious rulebreaking less convenient
 `"use strict";
-let self = undefined;
+const self = undefined;
 const window = undefined;
 const globalThis = undefined;
 const document = undefined;
@@ -340,7 +470,7 @@ class GameManager {
             throw err;
         }
         factory.botName = name;
-        switch(type.replace(/[ _-]/, '').toLowerCase()) {
+        switch(type.trim().replace(/[ _-]/, '').toLowerCase()) {
             case 'adventurer':
             case 'adventurers':
                 this.bots[ADVENTURERS][name] = factory;
@@ -353,8 +483,9 @@ class GameManager {
         }
     }
 
-    startGame(mmName, advName, seed, scheduler) {
+    startGame(mmName, advName, seed, scheduler, callback) {
         let game = new Game(this.bots[MAZE_MASTER][mmName], this.bots[ADVENTURERS][advName], seed);
-        return game.start(scheduler);
+        game.start(scheduler).then(callback ?? (_=>undefined));
+        return game;
     }
 }

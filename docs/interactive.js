@@ -61,10 +61,7 @@ function interactiveScheduler(speedControl, pausePlay, step) {
 function initPage() {
     let canvas = document.getElementById('viewport');
     let {width, height} = canvas;
-    let ctx = canvas.getContext('2d');
-
-    ctx.fillStyle = '#ccc';
-    ctx.fillRect(0, 0, width, height);
+    let drawCtx = canvas.getContext('2d');
 
     let manager = new GameManager();
     // TODO: scrape from challenge page
@@ -84,6 +81,11 @@ function initPage() {
 
     let sched = interactiveScheduler(delayControl, pausePlay, stepBtn);
 
+    function renderLoop() {
+        currentGame.render([width, height], drawCtx);
+        // requestAnimationFrame(renderLoop);
+    }
+
     startButton.addEventListener('click', ev => {
         if (currentGame) {
             return;
@@ -101,7 +103,8 @@ function initPage() {
             manager.addBot('mazemaster', selectedMM, mmCode.value);
         }
 
-        manager.startGame(selectedMM, selectedAdv, seedInput.value, sched)
-            .then(game => window.alert("done"))
+        currentGame = manager.startGame(selectedMM, selectedAdv, seedInput.value, sched)
+
+        renderLoop();
     })
 }
