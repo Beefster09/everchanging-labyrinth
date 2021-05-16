@@ -92,39 +92,6 @@ const ADV_ACTIONS = {
 const TURNS_PER_ROUND = 1000;
 const SCORE_PER_COMPLETED_MAZE = 1000;
 
-const MAZE_STYLE = {
-    // colors
-    colors: {
-        background: '#F5F5F5',
-        border: '#212121',
-        walls: '#424242',
-        grid: '#BDBDBD',
-
-        adv1: '#f44336',
-        adv1Stroke: '#b71c1c',
-        adv2VisibleCell: '#ffcdd2',
-        adv2VisibleWall: '#c62828',
-
-        adv2: '#2196F3',
-        adv2Stroke: '#0D47A1',
-        adv2VisibleCell: '#BBDEFB',
-        adv2VisibleWall: '#1565C0',
-
-        advBothVisibleCell: '#E1BEE7',
-        advBothVisibleWall: '#6A1B9A',
-
-        addedWall: '#2E7D32',
-        removedWall: '#FFCA28',
-    },
-    lines: {
-        border: 4,
-        walls: 2,
-        grid: 1,
-        adv: 2,
-    },
-    padding: 20
-};
-
 function wrapBot(thunk, name) {
     const before = performance.now();
     try {
@@ -372,67 +339,6 @@ class Game {
             console.error(err);
             return false;
         }
-    }
-
-    render(canvasDims, drawCtx, turnCounter, scoreElement, force) {
-        if (!this.dirty && !force) return;
-        this.dirty = false;
-
-        if (turnCounter) {
-            turnCounter.text = this.turnNumber;
-        }
-        if (scoreElement) {
-            scoreElement.text = this.score;
-        }
-
-        const [fullWidth, fullHeight] = canvasDims;
-
-        const outerSize = Math.min(fullHeight, fullWidth);
-        const innerSize = outerSize - 2 * MAZE_STYLE.padding;
-        const cellSize = innerSize / this.mazeSize;
-        const left = fullWidth / 2 - outerSize / 2 + MAZE_STYLE.padding;
-        const top = fullHeight / 2 - outerSize / 2 + MAZE_STYLE.padding;
-        const right = left + innerSize;
-        const bottom = top + innerSize;
-
-        // Fill in the background
-        drawCtx.fillStyle = MAZE_STYLE.colors.background;
-        drawCtx.fillRect(0, 0, fullWidth, fullHeight);
-
-        // Draw the grid lines
-        drawCtx.strokeStyle = MAZE_STYLE.colors.grid;
-        drawCtx.lineWidth = MAZE_STYLE.lines.grid;
-
-        drawCtx.beginPath();
-        for (let i = 1; i < this.mazeSize; i++) {
-            drawCtx.moveTo(left + i * cellSize, top);
-            drawCtx.lineTo(left + i * cellSize, bottom);
-            drawCtx.moveTo(left, top + i * cellSize);
-            drawCtx.lineTo(right, top + i * cellSize);
-        }
-        drawCtx.stroke();
-
-        drawCtx.strokeStyle = MAZE_STYLE.colors.walls;
-        drawCtx.lineWidth = MAZE_STYLE.lines.walls;
-        drawCtx.beginPath();
-        this.maze.forEach((row, rowIndex) => {
-            row.forEach((cell, colIndex) => {
-                if (cell.east) {
-                    drawCtx.moveTo(left + (colIndex + 1) * cellSize, top + rowIndex * cellSize);
-                    drawCtx.lineTo(left + (colIndex + 1) * cellSize, top + (rowIndex + 1) * cellSize);
-                }
-                if (cell.south) {
-                    drawCtx.moveTo(left + colIndex * cellSize, top + (rowIndex + 1) * cellSize)
-                    drawCtx.lineTo(left + (colIndex + 1) * cellSize, top + (rowIndex + 1) * cellSize);
-                }
-            })
-        })
-        drawCtx.stroke();
-
-        // Finally, draw the border
-        drawCtx.strokeStyle = MAZE_STYLE.colors.border;
-        drawCtx.lineWidth = MAZE_STYLE.lines.border;
-        drawCtx.strokeRect(left, top, innerSize, innerSize);
     }
 }
 
