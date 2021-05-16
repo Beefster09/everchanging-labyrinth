@@ -8,5 +8,8 @@ const ACTION = {
 
 return {
     startRound: n => undefined,
-    takeTurn: vision => [0, 0]
+    takeTurn: vision => [
+        Math.floor(random() * 5),
+        Math.floor(random() * 5),
+    ]
 }

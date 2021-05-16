@@ -77,7 +77,7 @@ class Maze {
 }
 
 const GEN_COMPUTE_FACTOR = 1; // ms of compute time allotted per cell to generate a maze
-const ADV_START_ROUND_COMPUTE = 1; // ms of compute time allotted to adventurers for startRound
+const ADV_START_ROUND_COMPUTE = 10; // ms of compute time allotted to adventurers for startRound
 const TURN_COMPUTE  = 1; // ms of compute time allotted per turn
 const ROUND_COMPUTE = 50;  // ms of compute time allotted at the beginning of each round
 
@@ -92,7 +92,56 @@ const ADV_ACTIONS = {
 const TURNS_PER_ROUND = 1000;
 const SCORE_PER_COMPLETED_MAZE = 1000;
 
-function wrapBot(thunk, name) {
+const REL_WALLS = {
+    north: [-1, 0, 'south'],
+    south: [0, 0, 'south'],
+    east:  [0, 0, 'east'],
+    west:  [0, -1, 'east'],
+};
+
+const OFFSET_BY_DIR = {
+    north: [-1, 0],
+    south: [+1, 0],
+    east:  [0, +1],
+    west:  [0, -1],
+}
+
+const DIRS_CIRCLE = [
+    'north',
+    'east',
+    'south',
+    'west',
+]
+function rotate(dir, turns) {
+    return DIRS_CIRCLE[
+        (DIRS_CIRCLE.indexOf(dir) + turns) % DIRS_CIRCLE.length
+    ];
+}
+
+const WALLS_BY_DIR = {
+    north: {
+        ahead: REL_WALLS.north,
+        left: REL_WALLS.west,
+        right: REL_WALLS.east,
+    },
+    south: {
+        ahead: REL_WALLS.south,
+        left: REL_WALLS.east,
+        right: REL_WALLS.west,
+    },
+    east: {
+        ahead: REL_WALLS.east,
+        left: REL_WALLS.north,
+        right: REL_WALLS.south,
+    },
+    west: {
+        ahead: REL_WALLS.west,
+        left: REL_WALLS.south,
+        right: REL_WALLS.north,
+    },
+};
+
+function botCall(thunk, name) {
     const before = performance.now();
     try {
         var ret = thunk();
@@ -136,7 +185,7 @@ class Game {
         this.dirty = true;
         this.mazeSize++;
         const mmTimeLimit = this.mazeSize * this.mazeSize * GEN_COMPUTE_FACTOR;
-        const [returnedBoard, genDuration] = wrapBot(() => this.mmBot.generateMaze(this.mazeSize), this.mmBotName);
+        const [returnedBoard, genDuration] = botCall(() => this.mmBot.generateMaze(this.mazeSize), this.mmBotName);
         if (genDuration > mmTimeLimit) {
             throw new Strike(
                 `${this.mmBotName}.generateMaze() took too long to execute (time limit is ${mmTimeLimit}ms)`
@@ -185,10 +234,10 @@ class Game {
             );
         }
 
-        const advDuration = wrapBot(() => this.advBot.startRound(this.mazeSize), this.advBotName)[1];
+        const advDuration = botCall(() => this.advBot.startRound(this.mazeSize), this.advBotName)[1];
         if (advDuration > ADV_START_ROUND_COMPUTE) {
             throw new Strike(
-                `${this.advBotName}.startRound() took too long to execute (time limit is ${ADV_START_ROUND_COMPUTE}ms)`,
+                `${this.advBotName}.startRound() took too long to execute (time limit is ${ADV_START_ROUND_COMPUTE}ms, but it took ${advDuration}ms)`,
                 this.advBotName
             );
         }
@@ -217,8 +266,8 @@ class Game {
         this.dirty = true;
         this.turnNumber++;
 
-        const vision = this.adv.map(this.calculateVision);
-        const [moves, advTime] = wrapBot(() => this.advBot.takeTurn(vision), this.advBotName);
+        const vision = this.adv.map(this.calculateVision.bind(this));
+        const [moves, advTime] = botCall(() => this.advBot.takeTurn(vision), this.advBotName);
         this.advCompute += TURN_COMPUTE - advTime;
         if (this.advCompute < 0) {
             throw new Strike(
@@ -227,13 +276,35 @@ class Game {
             );
         }
 
-        for (let move of moves) {
+        moves.forEach((move, i) => {
+            switch (move) {
+                case ADV_ACTIONS.FORWARD: {
+                    const {row, col, dir} = this.adv[i]
+                    const [dr, dc, dw] = REL_WALLS[dir];
+                    const [or, oc] = OFFSET_BY_DIR[dir];
 
-        }
+                    if (this.checkWall(row + dr, col + dc, dw)) {
+                        console.log(`${this.advBotName} (${'AB'[i]}) bumped into a wall!`);
+                        return
+                    }
+
+                    this.adv[i].row += or;
+                    this.adv[i].col += oc;
+                } break;
+                case ADV_ACTIONS.TURN_RIGHT:
+                case ADV_ACTIONS.TURN_AROUND:
+                case ADV_ACTIONS.TURN_LEFT: {
+                    this.adv[i].dir = rotate(this.adv[i].dir, 1 + move - ADV_ACTIONS.TURN_RIGHT);
+                } break;
+                case ADV_ACTIONS.WAIT:
+                default:
+                    break;
+            }
+        })
 
         this.score--;
 
-        if (this.adv.some(({row, col}) => row + 1 == this.boardSize && col + 1 == this.boardSize)) {
+        if (this.adv.some(({row, col}) => row >= this.mazeSize - 1 && col >= this.mazeSize - 1)) {
             // Adventurers win! Onto the next maze!
             this.score += SCORE_PER_COMPLETED_MAZE;
             this.lastActions = [...moves, null, null];
@@ -246,7 +317,7 @@ class Game {
         }
         else {
             // There are still more turns that can be taken this round, so the maze master gets to do something now
-            this.mmMana += 1 + Math.log(this.turnNumber) / Math.log(this.boardSize);
+            this.mmMana += 1 + Math.log(this.turnNumber) / Math.log(this.mazeSize);
             const mazeWithCost = this.maze.map(
                 row => row.map(
                     cell => ({
@@ -257,7 +328,7 @@ class Game {
                     })
                 )
             );
-            const [[removeWall, addWall], mmTime] = wrapBot(
+            const [[removeWall, addWall], mmTime] = botCall(
                 () => this.mmBot.takeTurn(this.mmMana, mazeWithCost),
                 this.mmBotName
             );
@@ -308,13 +379,46 @@ class Game {
         });
     }
 
-    calculateVision(location) {
+    checkWall(row, col, wall) {
+        // check borders
+        if (row < 0 || col < 0) return true;
+        if (col >= this.mazeSize - (wall == 'east')) return true;
+        if (row >= this.mazeSize - (wall == 'south')) return true;
+        // ok, it's inside the maze, so look at the walls
+        return !! this.maze[row][col][wall];
+    }
+
+    calculateVision({row, col, dir}) {
+        const {left: [lr, lc, lw], right: [rr, rc, rw], ahead: [ar, ac, aw]} = WALLS_BY_DIR[dir];
+        const [dr, dc] = OFFSET_BY_DIR[dir];
+
+        let cellVision = (r, c) => ({
+            ahead: this.checkWall(r + ar, c + ac, aw),
+            left:  this.checkWall(r + lr, c + lc, lw),
+            right: this.checkWall(r + rr, c + rc, rw),
+        });
+
         let vision = {
-            forward: [],
-            left: null,
-            right: null,
+            ahead: [cellVision(row, col)],
+            leftAhead: null,
+            rightAhead: null,
         }
 
+        while (!vision.ahead[vision.ahead.length - 1].ahead) {
+            let len = vision.ahead.length;
+            if (len > this.mazeSize) {
+                throw Error("Something is going horribly wrong. ABORT!");
+            }
+            vision.ahead.push(cellVision(row + len * dr, col + len * dc))
+        }
+        if (!vision.ahead[0].left) {
+            vision.leftAhead = this.checkWall(row - dc, col + dr, aw);
+        }
+        if (!vision.ahead[0].right) {
+            vision.rightAhead = this.checkWall(row + dc, col - dr, aw);
+        }
+
+        return vision;
     }
 
     mazeIsFullyConnected() {
@@ -389,9 +493,9 @@ class GameManager {
         }
     }
 
-    startGame(mmName, advName, seed, scheduler, callback) {
+    startGame(mmName, advName, seed, scheduler) {
         let game = new Game(this.bots[MAZE_MASTER][mmName], this.bots[ADVENTURERS][advName], seed);
-        game.start(scheduler).then(callback ?? (_=>undefined));
-        return game;
+        let promise = game.start(scheduler)
+        return [game, promise];
     }
 }

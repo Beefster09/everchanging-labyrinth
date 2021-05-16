@@ -35,32 +35,45 @@ const MAZE_STYLE = {
     padding: 20
 };
 
-const ADVENTURER_SHAPE = [
-    [0.2, 0.2],
-    [0.8, 0.5],
-    [0.2, 0.8]
-]
+const ADVENTURER_SHAPE = {
+    north: [
+        [0.2, 0.8],
+        [0.5, 0.2],
+        [0.8, 0.8]
+    ],
+    south: [
+        [0.2, 0.2],
+        [0.5, 0.8],
+        [0.8, 0.2]
+    ],
+    east: [
+        [0.2, 0.2],
+        [0.8, 0.5],
+        [0.2, 0.8]
+    ],
+    west: [
+        [0.8, 0.2],
+        [0.2, 0.5],
+        [0.8, 0.8]
+    ],
+};
 
-function transform() {
-
-}
-
-Game.prototype.render = function render(canvasDims, drawCtx, turnCounter, scoreElement, force) {
-    if (!this.dirty && !force) return;
-    this.dirty = false;
+function renderGame(game, canvasDims, drawCtx, turnCounter, scoreTracker, force) {
+    if (!game.dirty && !force) return;
+    game.dirty = false;
 
     if (turnCounter) {
-        turnCounter.text = this.turnNumber;
+        turnCounter.innerHTML = game.turnNumber;
     }
-    if (scoreElement) {
-        scoreElement.text = this.score;
+    if (scoreTracker) {
+        scoreTracker.innerHTML = game.score;
     }
 
     const [fullWidth, fullHeight] = canvasDims;
 
     const outerSize = Math.min(fullHeight, fullWidth);
     const innerSize = outerSize - 2 * MAZE_STYLE.padding;
-    const cellSize = innerSize / this.mazeSize;
+    const cellSize = innerSize / game.mazeSize;
     const left = fullWidth / 2 - outerSize / 2 + MAZE_STYLE.padding;
     const top = fullHeight / 2 - outerSize / 2 + MAZE_STYLE.padding;
     const right = left + innerSize;
@@ -75,7 +88,7 @@ Game.prototype.render = function render(canvasDims, drawCtx, turnCounter, scoreE
     drawCtx.lineWidth = MAZE_STYLE.lines.grid;
 
     drawCtx.beginPath();
-    for (let i = 1; i < this.mazeSize; i++) {
+    for (let i = 1; i < game.mazeSize; i++) {
         drawCtx.moveTo(left + i * cellSize, top);
         drawCtx.lineTo(left + i * cellSize, bottom);
         drawCtx.moveTo(left, top + i * cellSize);
@@ -87,7 +100,7 @@ Game.prototype.render = function render(canvasDims, drawCtx, turnCounter, scoreE
     drawCtx.strokeStyle = MAZE_STYLE.colors.walls;
     drawCtx.lineWidth = MAZE_STYLE.lines.walls;
     drawCtx.beginPath();
-    this.maze.forEach((row, rowIndex) => {
+    game.maze.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
             if (cell.east) {
                 drawCtx.moveTo(left + (colIndex + 1) * cellSize, top + rowIndex * cellSize);
@@ -102,8 +115,39 @@ Game.prototype.render = function render(canvasDims, drawCtx, turnCounter, scoreE
     drawCtx.stroke();
 
     // Draw the adventurers
-    const [advA, advB] = this.adv;
+    const [advA, advB] = game.adv;
 
+    function drawAdv(adv, points, drawProps) {
+        Object.assign(drawCtx, drawProps ?? {});
+        drawCtx.beginPath();
+        let first = true;
+        points.forEach(([x, y]) => {
+            drawCtx[(first? 'moveTo' : 'lineTo')](left + (adv.col + x) * cellSize, top + (adv.row + y) * cellSize);
+            first = false;
+        });
+        drawCtx.closePath();
+        drawCtx.fill();
+        drawCtx.stroke();
+    }
+
+    drawAdv(
+        game.adv[0],
+        ADVENTURER_SHAPE[game.adv[0].dir],
+        {
+            fillStyle: MAZE_STYLE.colors.adv1,
+            strokeStyle: MAZE_STYLE.colors.adv1Stroke,
+            lineWidth: MAZE_STYLE.lines.adv
+        }
+    );
+    drawAdv(
+        game.adv[1],
+        ADVENTURER_SHAPE[game.adv[1].dir],
+        {
+            fillStyle: MAZE_STYLE.colors.adv2,
+            strokeStyle: MAZE_STYLE.colors.adv2Stroke,
+            lineWidth: MAZE_STYLE.lines.adv
+        }
+    );
 
     // Finally, draw the border
     drawCtx.strokeStyle = MAZE_STYLE.colors.border;
@@ -188,14 +232,19 @@ function initPage() {
     let pausePlay = document.getElementById('pause-play');
     let stepBtn = document.getElementById('step-btn');
 
+    let scoreTracker = document.getElementById('score-tracker');
+    let turnCounter = document.getElementById('turn-counter');
+
     let advCode = document.getElementById('new-adv-code');
     let mmCode = document.getElementById('new-mm-code');
 
     let sched = interactiveScheduler(delayControl, pausePlay, stepBtn);
 
     function renderLoop() {
-        currentGame.render([width, height], drawCtx);
-        // requestAnimationFrame(renderLoop);
+        if (currentGame) {
+            renderGame(currentGame, [width, height], drawCtx, turnCounter, scoreTracker);
+            requestAnimationFrame(renderLoop);
+        }
     }
 
     startButton.addEventListener('click', ev => {
@@ -215,7 +264,10 @@ function initPage() {
             manager.addBot('mazemaster', selectedMM, mmCode.value);
         }
 
-        currentGame = manager.startGame(selectedMM, selectedAdv, seedInput.value, sched)
+        let [createdGame, promise] = manager.startGame(selectedMM, selectedAdv, seedInput.value, sched);
+        currentGame = createdGame;
+        promise.then(game => {currentGame = undefined})
+        promise.catch(game => {currentGame = undefined})
 
         renderLoop();
     })
