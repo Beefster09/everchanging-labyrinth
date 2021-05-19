@@ -28,7 +28,7 @@ const MAZE_STYLE = {
     },
     lines: {
         border: 4,
-        walls: 2,
+        walls: 3,
         grid: 1,
         adv: 2,
     },
