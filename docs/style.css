@@ -1,0 +1,78 @@
+.header{
+    background-color: #333;
+    color: white;
+    height: 40px;
+}
+body{
+    margin: 0px;
+}
+.header div{
+    height: 40px;
+    float: left;
+    padding: 10px;
+}
+#pause-play{
+    font-weight: 900;
+    font-size: 20px;
+    color: white;
+    background-color: transparent;
+    border: none;
+    padding: none;
+}
+#special{
+    padding: 5px;
+}
+#delay-control, #delay-control:focus{
+    background-color: transparent;
+    color:white;
+    border: none;
+    width: 50px;
+}
+.play{
+    width: 800px;
+}
+#single-game{
+    position: absolute;
+    left: 800px;
+    width: calc(100% - 800px);
+    top: 0px;
+    background-color: #333;
+    height: 100%;
+}
+.active, .accordion:hover {
+    background-color: #666; 
+}
+.active::after{
+      content: '-';
+      float: right;
+}
+.accordion{
+    width: 100%;
+    background-color: transparent;
+    color:  white;
+    border: none;
+    height: 40px;
+    font-size: 30px;
+}
+.accordion:not([class~=active])::after{
+      content: '+';
+      float: right;
+}
+.panel {
+    padding: 0 18px;
+    display: none;
+    background-color: #666;
+    color: white;
+    overflow: hidden;
+}
+.panel *{
+    color: inherit;
+    border: none;
+    background-color: inherit;
+}
+.panel input, .panel textarea, .panel select{
+    background-color: #333;
+}
+textarea{
+    width: calc(100vw - 850px);
+}

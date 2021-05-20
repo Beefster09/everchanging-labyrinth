@@ -28,7 +28,7 @@ const MAZE_STYLE = {
     },
     lines: {
         border: 4,
-        walls: 3,
+        walls: 2,
         grid: 1,
         adv: 2,
     },
@@ -169,7 +169,7 @@ function interactiveScheduler(speedControl, pausePlay, step) {
     let next = undefined;
     let scheduleHandle = undefined;
 
-    pausePlay.value = 'Pause';
+    pausePlay.value = '▏▏';
 
     function schedule(func) {
         if (!func) return;
@@ -188,13 +188,13 @@ function interactiveScheduler(speedControl, pausePlay, step) {
     pausePlay.addEventListener('click', ev => {
         if (paused) {
             paused = false;
-            pausePlay.value = 'Pause';
+            pausePlay.value = '▏▏';
             scheduleHandle = undefined;
             next();
         }
         else {
             paused = true;
-            pausePlay.value = 'Play';
+            pausePlay.value = '►';
             if (scheduleHandle) {
                 clearTimeout(scheduleHandle);
             }
@@ -203,7 +203,7 @@ function interactiveScheduler(speedControl, pausePlay, step) {
     step.addEventListener('click', ev => {
         if (!paused) {
             paused = true;
-            pausePlay.value = 'Play';
+            pausePlay.value = '►';
             if (scheduleHandle) {
                 clearTimeout(scheduleHandle);
             }
@@ -272,3 +272,24 @@ function initPage() {
         renderLoop();
     })
 }
+window.addEventListener('load',() => {
+    var acc = document.getElementsByClassName("accordion");
+    var i;
+    for (i = 0; i < acc.length; i++) {
+        acc[i].addEventListener("click", function() {
+            var panel = this.nextElementSibling;
+            var disp = panel.style.display;
+            for(var k = 0; k < acc.length; k++){
+    	        acc[k].nextElementSibling.style.display = 'none';   
+                acc[k].classList.remove("active");
+            }
+            if (disp === "block") {
+                this.classList.remove("active");
+                panel.style.display = "none";
+            } else {
+                this.classList.add("active");
+                panel.style.display = "block";
+            }
+        });
+    }
+})

@@ -8,52 +8,51 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body onload="initPage()">
-    <div>
-        <div>
-            <span>Turn <span id="turn-counter">N/A</span></span>
-            <span>Score: <span id="score-tracker">N/A</span></span>
-        </div>
-        <canvas id="viewport" width="800" height="600" />
-    </div>
-    <div id="game-controls">
-        <label for="delay-control">Delay</label>
-        <input id="delay-control" type="number" min="0" max="10000" step="10" value="50">ms
-        <input id="pause-play" type="button" value="Pause/Play">
-        <input id="step-btn" type="button" value="Step">
-    </div>
-    <div id="single-game">
-        <h2>Start Single Game</h2>
-
-        <label for="adv-selector">Adventurer</label>
-        <select name="adventurer" id="adv-selector">
-            <option value=''><i>&lt;New Challenger&gt;</i></option>
-        </select>
-
-        <label name="mazemaster" for="mm-selector">Maze Master</label>
-        <select id="mm-selector">
-            <option value=''><i>&lt;New Challenger&gt;</i></option>
-        </select>
-
-        <label for="seed-input">Seed:</label>
-        <input id="seed-input" type="text" placeholder="<random>">
-        <input id="random-seed" type="button" value="Random Seed" onclick="document.getElementById('seed-input').value = genRandomSeed();" >
-        <input id="start-button" type="button" value="Start" >
-    </div>
-    <div id="tournament-controls">
-        Tournament not yet implemented
-    </div>
-    <div id="new-challengers">
-        <div id="new-adv" class="new-challenger">
-            <h1>New Adventurers</h1>
-            <div>
-                <input type="button" value="Load Basic Template" onclick="loadSourceInto('./template-adventurers.js', document.getElementById('new-adv-code'));">
-                <input type="button" value="CLEAR" onclick="document.getElementById('new-adv-code').value = '';">
+    <div class='play'>
+        <div class='header'>
+            <div id='game-controls'>
+                <div><span>Turn <span id="turn-counter">N/A</span></span></div>
+                <div><span>Score: <span id="score-tracker">N/A</span></span></div>
+                <div><label for="delay-control">Delay</label></div>
+                <div><input id="delay-control" type="number" min="0" max="10000" step="10" value="50">ms</div>
+                <div id="special"><input id="pause-play" type="button" value="Pause/Play"></div>
+                <div><input id="step-btn" type="button" value="Step"></div>
             </div>
-            <textarea id="new-adv-code" placeholder="(Optional - type or paste function body to be tested here)" rows="30" cols="80">
-            </textarea>
         </div>
-        <div id="new-mm" class="new-challenger">
-            <h1>New Maze Master</h1>
+        <canvas id="viewport" width="800" height="600" ></canvas> 
+    </div>  
+    <div id="single-game">
+        <button class='accordion'>Start Single Game</button>
+        <div class='panel'>
+            <label for="adv-selector">Adventurer:</label>
+            <select name="adventurer" id="adv-selector">
+                <option value=''><i>&lt;New Challenger&gt;</i></option>
+            </select><br>
+
+            <label name="mazemaster" for="mm-selector">Maze Master:</label>
+            <select id="mm-selector">
+                <option value=''><i>&lt;New Challenger&gt;</i></option>
+            </select><br>
+
+            <label for="seed-input">Seed:</label>
+            <input id="seed-input" type="text" placeholder="<random>">
+            <input id="random-seed" type="button" value="Random Seed" onclick="document.getElementById('seed-input').value = genRandomSeed();" ><br>
+        <input id="start-button" type="button" value="Start" >
+        </div>
+        <button class='accordion'>Tournament</button>
+        <div id="tournament-controls" class='panel'>
+            Tournament not yet implemented
+        </div>
+        <button class='accordion'>New Adventurers</button>
+        <div id="new-adv" class="new-challenger panel">
+        <div>
+            <input type="button" value="Load Basic Template" onclick="loadSourceInto('./template-adventurers.js', document.getElementById('new-adv-code'));">
+            <input type="button" value="CLEAR" onclick="document.getElementById('new-adv-code').value = '';">
+        </div>
+        <textarea id="new-adv-code" placeholder="(Optional - type or paste function body to be tested here)" rows="30" cols="80">
+        </textarea></div>
+        <button class='accordion'>New Maze Master</button>
+        <div id="new-mm" class="new-challenger panel">
             <div>
                 <input type="button" value="Load Basic Template" onclick="loadSourceInto('./template-maze-master.js', document.getElementById('new-mm-code'));">
                 <input type="button" value="CLEAR" onclick="document.getElementById('new-mm-code').value = '';">
