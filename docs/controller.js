@@ -272,23 +272,25 @@ function initPage() {
         renderLoop();
     });
 
-    Array.prototype.forEach.call(document.getElementsByClassName('accordion'), (accButton, i, accordions) => {
-        accButton.addEventListener('click', function() {
-            let panel = this.nextElementSibling;
-            if (panel.style.display === 'block') {
-                this.classList.remove('active');
-                panel.style.display = 'none';
-            } else {
-                this.classList.add('active');
-                panel.style.display = 'block';
+    Array.prototype.forEach.call(document.getElementsByClassName('accordion'), (acc, i, accordions) => {
+        const panel = acc.nextElementSibling;
+        const panelHeight = panel.scrollHeight + 'px';
+        if (acc.classList.contains('active')) {
+            panel.style.height = panelHeight;
+        }
+        else {
+            panel.style.height = '0px';
+        }
+        acc.addEventListener('click', function() {
+            if (acc.classList.contains('active')) {
+                acc.classList.remove('active');
+                panel.style.height = '0px';
+                console.log("bye");
             }
-            if (false) { // maybe corresponds to some setting later
-                Array.prototype.forEach.call(accordions, acc => {
-                    if (!Object.is(this, acc)) {
-                        acc.nextElementSibling.style.display = 'none';
-                        acc.classList.remove("active");
-                    }
-                });
+            else {
+                acc.classList.add('active');
+                panel.style.height = panelHeight;
+                console.log("hi");
             }
         });
     });

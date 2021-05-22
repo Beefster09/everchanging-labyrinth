@@ -10,19 +10,21 @@
 <body id="everything" class="light-mode" onload="initPage()">
     <div id="play-column">
         <div id="game-controls">
-            <span>Turn <span id="turn-counter">N/A</span></span>
-            <span>Score: <span id="score-tracker">N/A</span></span>
+            <div>Turn <span id="turn-counter" class="counter">N/A</span></div>
+            <div>Score: <span id="score-tracker" class="counter">N/A</span></div>
             <div>
                 <label for="delay-control">Delay</label>
-                <input id="delay-control" type="number" min="0" max="10000" step="10" value="50">ms
+                <input id="delay-control" class="counter" type="number" min="0" max="10000" step="10" value="50">ms
             </div>
-            <input id="pause-play" type="button" value="Pause/Play">
-            <input id="step-btn" type="button" value="Step">
+            <div class="playback-controls">
+                <input id="pause-play" type="button" value="Pause/Play">
+                <input id="step-btn" type="button" value="Step">
+            </div>
         </div>
         <canvas id="viewport" width="800" height="600" ></canvas>
     </div>
     <div id="control-column">
-        <button class="accordion">Start Single Game</button>
+        <button class="accordion active">Start Single Game</button>
         <div id="single-game" class='panel'>
             <label for="adv-selector">Adventurer:</label>
             <select name="adventurer" id="adv-selector">
@@ -66,7 +68,7 @@
         </div>
 
         <button id="column-swapper">Change Column Order</button>
-        <button id="theme-toggle" style="display: none">Change Column Order</button>
+        <button id="theme-toggle" style="display: none">Dark Mode</button>
     </div>
 </body>
 </html>

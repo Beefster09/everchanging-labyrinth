@@ -25,6 +25,20 @@ body.flip-columns {
     padding: 0.5em 1.5em;
 }
 
+.counter {
+    font-family: monospace;
+    font-size: 1rem;
+}
+
+input[type="number"].counter {
+    padding: 0;
+    border: none;
+}
+
+#delay-control {
+    width: 4em;
+}
+
 #control-column {
     flex-grow: 1;
     top: 0px;
@@ -54,6 +68,11 @@ body.flip-columns #control-column {
     border-bottom-style: solid;
 }
 
+#game-controls * {
+    line-height: 100%;
+    vertical-align: middle;
+}
+
 .accordion {
     width: 100%;
     border: none;
@@ -80,17 +99,26 @@ body.flip-columns #control-column {
 }
 
 .panel {
-    padding: 0 18px;
-    display: none;
     overflow: hidden;
-    padding-left: 2rem;
-    padding-right: 2rem;
-    padding-top: 0.5rem;
-    padding-bottom: 0.5rem;
+    padding: 0;
+    margin-left: 2rem;
+    margin-right: 2rem;
+    margin-top: 0.5rem;
+    margin-bottom: 0.5rem;
+    transition: height 0.25s ease-in-out, margin 0.4s ease-in-out;
+}
+
+.accordion:not(.active) + .panel{
+    margin-top: 0;
+    margin-bottom: 0;
+}
+
+.panel * {
+    margin: 0;
 }
 
 textarea {
-    width: calc(100% - 4rem);
+    width: 100%;
 }
 
 .note {
