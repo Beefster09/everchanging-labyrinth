@@ -1,0 +1,129 @@
+body {
+    display: flex;
+    margin: 0;
+    height: 100vh;
+}
+
+body:not(.flip-columns) {
+    flex-direction: row;
+}
+
+body.flip-columns {
+    flex-direction: row-reverse;
+}
+
+.start {
+    font-size: 1.3rem;
+    font-variant: small-caps;
+}
+
+#play-column {
+    flex-grow: 0;
+}
+
+#play-column > * {
+    padding: 0.5em 1.5em;
+}
+
+#control-column {
+    flex-grow: 1;
+    top: 0px;
+    height: 100%;
+    overflow-y: auto;
+}
+
+body:not(.flip-columns) #control-column {
+    border-left-width: 1px;
+    border-left-style: solid;
+}
+
+body.flip-columns #control-column {
+    border-right-width: 1px;
+    border-right-style: solid;
+}
+
+#control-column {
+    margin: 0;
+}
+
+#game-controls {
+    display: flex;
+    flex-direction: right;
+    justify-content: space-between;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
+}
+
+.accordion {
+    width: 100%;
+    border: none;
+    height: 2.5rem;
+    font-size: 2rem;
+}
+
+.accordion:not(:first-child) {
+    border-top-width: 1px;
+    border-top-style: solid;
+}
+
+.accordion::after {
+    font-family: monospace;
+    float: right;
+}
+
+.accordion:not(.active)::after {
+    content: '+';
+}
+
+.accordion.active::after {
+    content: '-';
+}
+
+.panel {
+    padding: 0 18px;
+    display: none;
+    overflow: hidden;
+    padding-left: 2rem;
+    padding-right: 2rem;
+    padding-top: 0.5rem;
+    padding-bottom: 0.5rem;
+}
+
+textarea {
+    width: calc(100% - 4rem);
+}
+
+.note {
+    font-style: italic;
+    opacity: 0.5;
+}
+
+/* Light Mode colors */
+
+body.light-mode {
+    background-color: #F5F5F5;
+    border-color: #212121;
+}
+
+body.light-mode .accordion {
+    background-color: #F5F5F5;
+}
+
+body.light-mode .accordion:hover {
+    background-color: #B0BEC5;
+}
+
+/* Dark Mode Colors */
+
+body.dark-mode {
+    background-color: #F5F5F5;
+    border-color: #212121;
+}
+
+body.dark-mode .accordion {
+    background-color: #F5F5F5;
+}
+
+body.dark-mode .accordion:hover {
+    background-color: #B0BEC5;
+}

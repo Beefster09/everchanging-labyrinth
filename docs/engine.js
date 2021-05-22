@@ -459,15 +459,16 @@ class Game {
     }
 }
 
-const BOT_HEADER = // Code header to make most obvious rulebreaking less convenient
-`"use strict";
-const self = undefined;
-const window = undefined;
-const globalThis = undefined;
-const document = undefined;
-Math = Object.create(Math);
-Math.random = random;
-`;
+const BOT_HEADER = ( // Code header to make most obvious rulebreaking less convenient
+      '"use strict";'
+    + 'const self = undefined;'
+    + 'const window = undefined;'
+    + 'const globalThis = undefined;'
+    + 'const document = undefined;'
+    + 'Math = Object.create(Math);'
+    + 'Math.random = random;'
+    + 'const setTimeout = () => undefined;'
+)
 const MAZE_MASTER = 0;
 const ADVENTURERS = 1;
 

@@ -224,7 +224,7 @@ function initPage() {
     let currentGame = undefined;
 
     let seedInput = document.getElementById('seed-input');
-    let startButton = document.getElementById('start-button');
+    let startButton = document.getElementById('start-single-game');
     let advSelect = document.getElementById('adv-selector');
     let mmSelect = document.getElementById('mm-selector');
 
@@ -270,5 +270,48 @@ function initPage() {
         promise.catch(game => {currentGame = undefined})
 
         renderLoop();
-    })
+    });
+
+    Array.prototype.forEach.call(document.getElementsByClassName('accordion'), (accButton, i, accordions) => {
+        accButton.addEventListener('click', function() {
+            let panel = this.nextElementSibling;
+            if (panel.style.display === 'block') {
+                this.classList.remove('active');
+                panel.style.display = 'none';
+            } else {
+                this.classList.add('active');
+                panel.style.display = 'block';
+            }
+            if (false) { // maybe corresponds to some setting later
+                Array.prototype.forEach.call(accordions, acc => {
+                    if (!Object.is(this, acc)) {
+                        acc.nextElementSibling.style.display = 'none';
+                        acc.classList.remove("active");
+                    }
+                });
+            }
+        });
+    });
+
+    document.getElementById('column-swapper').addEventListener('click', ev => {
+        let body = document.getElementById('everything');
+        if (body.classList.contains('flip-columns')) {
+            body.classList.remove('flip-columns');
+        }
+        else {
+            body.classList.add('flip-columns');
+        }
+    });
+
+    document.getElementById('theme-toggle').addEventListener('click', ev => {
+        let body = document.getElementById('everything');
+        if (body.classList.contains('light-mode')) {
+            body.classList.remove('light-mode');
+            body.classList.add('dark-mode');
+        }
+        else {
+            body.classList.remove('dark-mode');
+            body.classList.add('light-mode');
+        }
+    });
 }
