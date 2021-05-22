@@ -12,6 +12,10 @@ body.flip-columns {
     flex-direction: row-reverse;
 }
 
+body div {
+    position: relative;
+}
+
 .start {
     font-size: 1.3rem;
     font-variant: small-caps;
@@ -74,6 +78,7 @@ body.flip-columns #control-column {
 }
 
 .accordion {
+    background-color: inherit;
     width: 100%;
     border: none;
     height: 2.5rem;
@@ -118,6 +123,13 @@ body.flip-columns #control-column {
 }
 
 textarea {
+    margin: 0;
+    border-width: 1px;
+    padding: 0.2em;
+    min-height: 20em;
+    max-height: 80vh;
+    min-width: 40em;
+    max-width: calc(100% - 2px - 0.4em);
     width: 100%;
 }
 
@@ -126,32 +138,140 @@ textarea {
     opacity: 0.5;
 }
 
+#column-swapper {
+    position: absolute;
+    top: 50vh;
+    margin: 0;
+    padding: 0.1em;
+    writing-mode: vertical-lr;
+    text-orientation: mixed;
+}
+
+body:not(.flip-columns) #column-swapper {
+    left: 0px;
+    transform: translate(-2px, -50%);
+}
+
+body.flip-columns #column-swapper {
+    right: 0px;
+    transform: translate(2px, -50%);
+}
+
+#theme-toggle {
+    width: 3rem;
+    height: 3rem;
+    font-size: 1.8rem;
+    border-radius: 1.5rem;
+    padding: 0;
+    vertical-align: middle;
+    text-align: center;
+    border: none;
+    position: fixed;
+    right: 1rem;
+    bottom: 1rem;
+}
+
 /* Light Mode colors */
 
 body.light-mode {
     background-color: #F5F5F5;
+}
+
+body.light-mode * {
+    color: #212121;
+}
+
+body.light-mode button.accordion,
+body.light-mode textarea,
+body.light-mode input,
+body.light-mode select {
     border-color: #212121;
 }
 
-body.light-mode .accordion {
-    background-color: #F5F5F5;
+body.light-mode button:not(.accordion),
+body.light-mode textarea,
+body.light-mode input,
+body.light-mode select {
+    background-color: #EEEEEE;
+    border: 1px solid #607D8B;
+}
+
+body.light-mode button:not(.accordion):hover {
+    background-color: #B0BEC5;
+    border: 1px solid #546E7A;
 }
 
 body.light-mode .accordion:hover {
     background-color: #B0BEC5;
 }
 
+body.light-mode button#theme-toggle {
+    background-color: #212121;
+}
+
+body.light-mode button#theme-toggle .sun {
+    display: none;
+}
+
+body.light-mode button#theme-toggle .moon {
+    color: #F5F5F5;
+}
+
 /* Dark Mode Colors */
 
 body.dark-mode {
-    background-color: #F5F5F5;
-    border-color: #212121;
+    background-color: #212121;
 }
 
-body.dark-mode .accordion {
-    background-color: #F5F5F5;
+body.dark-mode * {
+    color: #E0E0E0;
+}
+
+body.dark-mode button.accordion,
+body.dark-mode textarea,
+body.dark-mode input,
+body.dark-mode select
+{
+    border-color: #9E9E9E;
+}
+
+body.dark-mode button:not(.accordion),
+body.dark-mode textarea,
+body.dark-mode input,
+body.dark-mode select
+{
+    border-width: 1px;
+    background-color: #212121;
+}
+
+body.dark-mode textarea:hover,
+body.dark-mode input:hover,
+body.dark-mode select:hover
+{
+    border-color: #90A4AE;
+    background-color: #37474F;
+}
+
+body.dark-mode button:not(.accordion) {
+    background-color: #424242;
+}
+
+body.dark-mode button:not(.accordion):hover {
+    background-color: #455A64;
 }
 
 body.dark-mode .accordion:hover {
-    background-color: #B0BEC5;
+    background-color: #455A64;
+}
+
+body.dark-mode button#theme-toggle {
+    background-color: #F5F5F5;
+}
+
+body.dark-mode button#theme-toggle .sun {
+    color: #212121;
+}
+
+body.dark-mode button#theme-toggle .moon {
+    display: none;
 }

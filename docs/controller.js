@@ -4,7 +4,7 @@
 
 const MAZE_STYLE = {
     // colors
-    colors: {
+    lightColors: {
         background: '#F5F5F5',
         border: '#212121',
         walls: '#424242',
@@ -26,6 +26,28 @@ const MAZE_STYLE = {
         addedWall: '#2E7D32',
         removedWall: '#FFCA28',
     },
+    darkColors: {
+        background: '#212121',
+        border: '#F5F5F5',
+        walls: '#BDBDBD',
+        grid: '#9E9E9E',
+
+        adv1: '#f44336',
+        adv1Stroke: '#ffcdd2',
+        adv2VisibleCell: '#b71c1c',
+        adv2VisibleWall: '#ef9a9a',
+
+        adv2: '#2196F3',
+        adv2Stroke: '#BBDEFB',
+        adv2VisibleCell: '#0D47A1',
+        adv2VisibleWall: '#90CAF9',
+
+        advBothVisibleCell: '#4A148C',
+        advBothVisibleWall: '#CE93D8',
+
+        addedWall: '#A5D6A7',
+        removedWall: '#FFB300',
+    },
     lines: {
         border: 4,
         walls: 3,
@@ -34,6 +56,8 @@ const MAZE_STYLE = {
     },
     padding: 20
 };
+
+MAZE_STYLE.colors = MAZE_STYLE.lightColors;
 
 const ADVENTURER_SHAPE = {
     north: [
@@ -272,28 +296,32 @@ function initPage() {
         renderLoop();
     });
 
-    Array.prototype.forEach.call(document.getElementsByClassName('accordion'), (acc, i, accordions) => {
-        const panel = acc.nextElementSibling;
-        const panelHeight = panel.scrollHeight + 'px';
+    for (let acc of document.getElementsByClassName('accordion')) {
+        let panel = acc.nextElementSibling;
         if (acc.classList.contains('active')) {
-            panel.style.height = panelHeight;
+            panel.style.height = panel.scrollHeight + 'px';
         }
         else {
             panel.style.height = '0px';
         }
-        acc.addEventListener('click', function() {
+        acc.addEventListener('click', ev => {
             if (acc.classList.contains('active')) {
                 acc.classList.remove('active');
                 panel.style.height = '0px';
-                console.log("bye");
             }
             else {
                 acc.classList.add('active');
-                panel.style.height = panelHeight;
-                console.log("hi");
+                panel.style.height = panel.scrollHeight + 'px';
             }
         });
-    });
+        for (let textBox of panel.getElementsByTagName('textarea')) {
+            textBox.addEventListener('mouseup', ev => {
+                if (acc.classList.contains('active')) {
+                    panel.style.height = panel.scrollHeight + 'px';
+                }
+            })
+        }
+    };
 
     document.getElementById('column-swapper').addEventListener('click', ev => {
         let body = document.getElementById('everything');
@@ -310,10 +338,12 @@ function initPage() {
         if (body.classList.contains('light-mode')) {
             body.classList.remove('light-mode');
             body.classList.add('dark-mode');
+            MAZE_STYLE.colors = MAZE_STYLE.darkColors;
         }
         else {
             body.classList.remove('dark-mode');
             body.classList.add('light-mode');
+            MAZE_STYLE.colors = MAZE_STYLE.lightColors;
         }
     });
 }

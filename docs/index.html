@@ -17,29 +17,35 @@
                 <input id="delay-control" class="counter" type="number" min="0" max="10000" step="10" value="50">ms
             </div>
             <div class="playback-controls">
-                <input id="pause-play" type="button" value="Pause/Play">
-                <input id="step-btn" type="button" value="Step">
+                <button id="pause-play">Pause/Play</button>
+                <button id="step-btn">Step</button>
             </div>
         </div>
         <canvas id="viewport" width="800" height="600" ></canvas>
     </div>
     <div id="control-column">
-        <button class="accordion active">Start Single Game</button>
+        <button class="accordion active">Single Game</button>
         <div id="single-game" class='panel'>
-            <label for="adv-selector">Adventurer:</label>
-            <select name="adventurer" id="adv-selector">
-                <option value=''><i>&lt;New Challenger&gt;</i></option>
-            </select><br>
+            <div>
+                <label for="adv-selector">Adventurer:</label>
+                <select name="adventurer" id="adv-selector">
+                    <option value=''><i>&lt;New Challenger&gt;</i></option>
+                </select>
+            </div>
 
-            <label name="mazemaster" for="mm-selector">Maze Master:</label>
-            <select id="mm-selector">
-                <option value=''><i>&lt;New Challenger&gt;</i></option>
-            </select><br>
+            <div>
+                <label name="mazemaster" for="mm-selector">Maze Master:</label>
+                <select id="mm-selector">
+                    <option value=''><i>&lt;New Challenger&gt;</i></option>
+                </select>
+            </div>
 
-            <label for="seed-input">Seed:</label>
-            <input id="seed-input" type="text" placeholder="<random>">
-            <input id="random-seed" type="button" value="Random Seed" onclick="document.getElementById('seed-input').value = genRandomSeed();" ><br>
-            <input id="start-single-game" class="start" type="button" value="Start" >
+            <div>
+                <label for="seed-input">Seed:</label>
+                <input id="seed-input" type="text" placeholder="<random>">
+                <button id="random-seed" onclick="document.getElementById('seed-input').value = genRandomSeed();">Random Seed</button>
+            </div>
+            <button id="start-single-game" class="start">Start</button>
         </div>
 
         <button class="accordion">Tournament</button>
@@ -50,8 +56,8 @@
         <button class='accordion'>New Adventurers</button>
         <div id="new-adv" class="new-challenger panel">
             <div>
-                <input type="button" value="Load Basic Template" onclick="loadSourceInto('./template-adventurers.js', document.getElementById('new-adv-code'));">
-                <input type="button" value="CLEAR" onclick="document.getElementById('new-adv-code').value = '';">
+                <button onclick="loadSourceInto('./template-adventurers.js', document.getElementById('new-adv-code'));">Load Basic Template</button>
+                <button onclick="document.getElementById('new-adv-code').value = '';">CLEAR</button>
             </div>
             <textarea id="new-adv-code" placeholder="(Optional - type or paste function body to be tested here)" rows="30" cols="80">
             </textarea>
@@ -60,15 +66,18 @@
         <button class="accordion">New Maze Master</button>
         <div id="new-mm" class="new-challenger panel">
             <div>
-                <input type="button" value="Load Basic Template" onclick="loadSourceInto('./template-maze-master.js', document.getElementById('new-mm-code'));">
-                <input type="button" value="CLEAR" onclick="document.getElementById('new-mm-code').value = '';">
+                <button onclick="loadSourceInto('./template-maze-master.js', document.getElementById('new-mm-code'));">Load Basic Template</button>
+                <button onclick="document.getElementById('new-mm-code').value = '';">CLEAR</button>
             </div>
             <textarea id="new-mm-code" placeholder="(Optional - type or paste function body to be tested here)" rows="30" cols="80">
             </textarea>
         </div>
 
         <button id="column-swapper">Change Column Order</button>
-        <button id="theme-toggle" style="display: none">Dark Mode</button>
     </div>
+    <button id="theme-toggle">
+        <span class="sun">&#x2600;&#xFE0E;</span>
+        <span class="moon">&#x1F319;&#xFE0E;</span>
+    </button>
 </body>
 </html>
