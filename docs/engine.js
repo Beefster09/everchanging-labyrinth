@@ -419,7 +419,7 @@ class Game {
         return !! this.maze[row][col][wall];
     }
 
-    calculateVision({row, col, dir}) {
+    calculateVision({row, col, dir}, {row: otherRow, col: otherCol}) {
         const {left: [lr, lc, lw], right: [rr, rc, rw], ahead: [ar, ac, aw]} = WALLS_BY_DIR[dir];
         const [dr, dc] = OFFSET_BY_DIR[dir];
 
@@ -433,6 +433,7 @@ class Game {
             ahead: [cellVision(row, col)],
             leftAhead: null,
             rightAhead: null,
+            friend: (row == otherRow && col == otherCol)? [0, 0] : null,
         }
 
         while (!vision.ahead[vision.ahead.length - 1].ahead) {
@@ -440,13 +441,22 @@ class Game {
             if (len > this.mazeSize) {
                 throw Error("Something is going horribly wrong. ABORT!");
             }
-            vision.ahead.push(cellVision(row + len * dr, col + len * dc))
+            vision.ahead.push(cellVision(row + len * dr, col + len * dc));
+            if (otherRow == row + len * dr && otherCol == col + len * dc) {
+                vision.friend = [len, 0];
+            }
         }
         if (!vision.ahead[0].left) {
             vision.leftAhead = this.checkWall(row - dc, col + dr, aw);
+            if (otherRow == row - dc && otherCol == col + dr) {
+                vision.friend = [0, -1];
+            }
         }
         if (!vision.ahead[0].right) {
             vision.rightAhead = this.checkWall(row + dc, col - dr, aw);
+            if (otherRow == row + dc && otherCol == col - dr) {
+                vision.friend = [0, 1];
+            }
         }
 
         return vision;
