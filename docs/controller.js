@@ -367,25 +367,14 @@ function initPage() {
             drawCtx.clearRect(0, 0, width, height);
         }
     });
-}
-window.addEventListener('load',() => {
-    var acc = document.getElementsByClassName("accordion");
-    var i;
-    for (i = 0; i < acc.length; i++) {
-        acc[i].addEventListener("click", function() {
-            var panel = this.nextElementSibling;
-            var disp = panel.style.display;
-            for(var k = 0; k < acc.length; k++){
-    	        acc[k].nextElementSibling.style.display = 'none';   
-                acc[k].classList.remove("active");
-            }
-            if (disp === "block") {
-                this.classList.remove("active");
-                panel.style.display = "none";
-            } else {
-                this.classList.add("active");
-                panel.style.display = "block";
-            }
-        });
+    function resizeHandler(){
+        var canvas = document.querySelector('#viewport')
+        canvas.style.height = innerHeight - 60 + 'px';
+        canvas.style.width = innerHeight - 60 + 'px';
+        canvas.style.left = (900 - innerHeight) / 2 + 'px';
+        canvas.style.top = '0px';
     }
-})
+    resizeHandler()
+    window.addEventListener('resize',resizeHandler);
+}
+
