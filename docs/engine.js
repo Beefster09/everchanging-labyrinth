@@ -149,7 +149,7 @@ function wrapBot(factory, randomFunc, methods) {
     function wrapMethod(boundMethod) {
         return (...args) => {
             const before = performance.now();
-            let elapsed = Math.Infinity;
+            let elapsed = Infinity;
             try {
                 var ret = boundMethod(...args);
             }
@@ -274,6 +274,8 @@ class Game {
             );
         }
 
+        this.mmMana = 0;
+
         this.mmCompute = ROUND_COMPUTE;
         this.advCompute = ROUND_COMPUTE;
 
@@ -351,8 +353,8 @@ class Game {
         }
         else {
             // There are still more turns that can be taken this round, so the maze master gets to do something now
-            this.mmMana += 1 + Math.log(this.turnNumber) / Math.log(this.mazeSize);
-            const mazeWithCost = this.maze.map(
+            this.mmMana += Math.floor(1 + Math.log(this.turnNumber) / Math.log(this.mazeSize));
+            const [mmActions, mmTime] = this.mmBot.takeTurn(this.mmMana, this.maze.map(
                 row => row.map(
                     cell => ({
                         east: cell.east,
@@ -361,8 +363,8 @@ class Game {
                         southCost: fib(cell.southChangeCount),
                     })
                 )
-            );
-            const [[removeWall, addWall], mmTime] = this.mmBot.takeTurn(this.mmMana, mazeWithCost);
+            ));
+
             this.mmCompute += TURN_COMPUTE - mmTime;
             if (this.mmCompute < 0) {
                 throw new Strike(
@@ -371,17 +373,69 @@ class Game {
                 );
             }
 
-            if (!this.mazeIsFullyConnected()) {
-                throw new Strike(
-                    `Maze modified by ${this.mmBot.name}.takeTurn() is not fully-connected\n`
-                    + JSON.stringify(returnedBoard, null, '\t'),
-                    this.mmBot.name
-                );
+            if (mmActions == null) { // nothing to do
+                this.lastActions = [...moves, null, null];
+                return this.doTurn.bind(this);
+            }
+
+            let assert = pred => {
+                if (!pred) throw new Strike(
+                    `${this.mmBot.name}.takeTurn() returned an incompatible object.`
+                    + " (it must be nullish or an array of length 2 with wall coordinates or nulls)"
+                )
+            }
+            // Verify schema of return value
+            assert(Array.isArray(mmActions) && mmActions.length == 2);
+            for (let item of mmActions) {
+                if (item != null) assert(
+                    Array.isArray(item)
+                    && item.length == 3
+                    && typeof(item[0]) == 'number'
+                    && typeof(item[1]) == 'number'
+                    && ['south', 'east'].includes(item[2])
+                )
+            }
+
+            const [removeWall, addWall] = mmActions;
+
+            // Do nothing if both coordinates are the same
+            if (
+                removeWall != null
+                && addWall != null
+                && removeWall.every((item, i) => item === addWall[i])
+            ) {
+                this.lastActions = [...moves, null, null];
+                return this.doTurn.bind(this);
+            }
+
+            let totalCost = 0;
+            if (removeWall && this.checkWall(...removeWall)) {
+                totalCost += this.costToChange(...removeWall);
+            }
+            if (addWall && !this.checkWall(...addWall)) {
+                totalCost += this.costToChange(...addWall);
+            }
+
+            if (totalCost <= this.mmMana) {
+                this.mmMana -= totalCost;
+
+                let removePossible = removeWall? !this.adv.some(adv => this.isWallVisible(adv, ...removeWall)) : false;
+                let addPossible    = addWall?    !this.adv.some(adv => this.isWallVisible(adv, ...addWall))    : false;
+
+                if (removePossible) this.changeWall(...removeWall, false);
+                if (addPossible)    this.changeWall(...addWall,    true);
+
+                if (!this.mazeIsFullyConnected()) {
+                    throw new Strike(
+                        `Maze modified by ${this.mmBot.name}.takeTurn() is not fully-connected\n`
+                        + JSON.stringify(this.maze, null, '\t'),
+                        this.mmBot.name
+                    );
+                }
             }
 
             this.lastActions = [...moves, removeWall, addWall];
-
-            return this.doTurn.bind(this)
+            return this.doTurn.bind(this);
         }
     }
 
@@ -419,11 +473,75 @@ class Game {
         return !! this.maze[row][col][wall];
     }
 
+    costToChange(row, col, wall) {
+        if (row < 0 || col < 0) return 0;
+        else if (col >= this.mazeSize - (wall == 'east')) return 0;
+        else if (row >= this.mazeSize - (wall == 'south')) return 0;
+
+        return fib(this.maze[row][col][wall + 'ChangeCount']);
+    }
+
+    changeWall(row, col, wall, value) {
+        if (row < 0 || col < 0) return;
+        if (col >= this.mazeSize - (wall == 'east')) return;
+        if (row >= this.mazeSize - (wall == 'south')) return;
+        if (value == !!this.maze[row][col][wall]) return;  // no change
+        this.maze[row][col][wall] = value;
+        this.maze[row][col][wall + 'ChangeCount']++;
+    }
+
+    isWallVisible(adv, row, col, wall) {
+        // Fast-fail walls behind the adventurer
+        switch (adv.dir) {
+            case 'north':
+                if (adv.row <= row) return false;
+                break;
+            case 'south':
+                if (adv.row > row) return false;
+                break;
+            case 'east':
+                if (adv.col > col) return false;
+                break;
+            case 'west':
+                if (adv.col <= col) return false;
+                break;
+        }
+        // And then do hard calculations...
+        const {left: [lr, lc, lw], right: [rr, rc, rw], ahead: [ar, ac, aw]} = WALLS_BY_DIR[adv.dir];
+        const [dr, dc] = OFFSET_BY_DIR[adv.dir];
+
+        const sameCoords = (r, c, w) => row === r && col === c && wall === w;
+        const wallCoords = (r, c) => ({
+            ahead: [r + ar, c + ac, aw],
+            left:  [r + lr, c + lc, lw],
+            right: [r + rr, c + rc, rw],
+        });
+        const cellHasMatch = cell => (
+               sameCoords(...cell.ahead)
+            || sameCoords(...cell.left)
+            || sameCoords(...cell.right)
+        );
+
+        let curCell = wallCoords(adv.row, adv.col);
+        if (cellHasMatch(curCell)) return true;
+        if (!this.checkWall(...curCell.left)  && sameCoords(adv.row - dc + ar, adv.col + dr + ac, aw)) return true;
+        if (!this.checkWall(...curCell.right) && sameCoords(adv.row + dc + ar, adv.col - dr + ac, aw)) return true;
+        let vRow = adv.row + dr;
+        let vCol = adv.col + dc;
+        while (!this.checkWall(...curCell.ahead)) {
+            curCell = wallCoords(vRow, vCol);
+            if (cellHasMatch(curCell)) return true;
+            vRow += dr;
+            vCol += dc;
+        }
+        return false;
+    }
+
     calculateVision({row, col, dir}, {row: otherRow, col: otherCol}) {
         const {left: [lr, lc, lw], right: [rr, rc, rw], ahead: [ar, ac, aw]} = WALLS_BY_DIR[dir];
         const [dr, dc] = OFFSET_BY_DIR[dir];
 
-        let cellVision = (r, c) => ({
+        const cellVision = (r, c) => ({
             ahead: this.checkWall(r + ar, c + ac, aw),
             left:  this.checkWall(r + lr, c + lc, lw),
             right: this.checkWall(r + rr, c + rc, rw),
@@ -447,13 +565,13 @@ class Game {
             }
         }
         if (!vision.ahead[0].left) {
-            vision.leftAhead = this.checkWall(row - dc, col + dr, aw);
+            vision.leftAhead = this.checkWall(row - dc + ar, col + dr + ac, aw);
             if (otherRow == row - dc && otherCol == col + dr) {
                 vision.friend = [0, -1];
             }
         }
         if (!vision.ahead[0].right) {
-            vision.rightAhead = this.checkWall(row + dc, col - dr, aw);
+            vision.rightAhead = this.checkWall(row + dc + ar, col - dr + ac, aw);
             if (otherRow == row + dc && otherCol == col - dr) {
                 vision.friend = [0, 1];
             }

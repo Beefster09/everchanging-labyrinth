@@ -24,8 +24,13 @@ button {
 input[type="number"] {
     padding: 0;
     border: none;
+}
+
+.counter {
     font-family: monospace;
-    font-size: 1em;
+    font-size: 1.3em;
+    text-align: right;
+    display: inline-block;
 }
 
 .start {
@@ -167,13 +172,13 @@ textarea {
 }
 
 body:not(.flip-columns) #column-swapper {
-    left: 0px;
-    transform: translate(-2px, -50%);
+    left: -2px;
+    transform: translateY(-50%);
 }
 
 body.flip-columns #column-swapper {
-    right: 0px;
-    transform: translate(2px, -50%);
+    right: -2px;
+    transform: translateY(-50%);
 }
 
 #theme-toggle {
