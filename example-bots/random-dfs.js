@@ -20,8 +20,12 @@ function shuffled(arr)  {
     return result;
 }
 
+let curSize = 0;
+
 return {
     generateMaze: size => {
+        curSize = size;
+
         let maze = [...Array(size)].map(
             r => [...Array(size)].map(
                 c => ({
@@ -55,5 +59,8 @@ return {
 
         return maze;
     },
-    takeTurn: (mana, maze) => [null, null]
+    takeTurn: (mana, maze) => [
+        [random() * curSize | 0, random() * curSize | 0, (random() < 0.5)? 'south' : 'east'],
+        (random() < 0.1)? [random() * curSize | 0, random() * curSize | 0, (random() < 0.5)? 'south' : 'east'] : null
+    ]
 }

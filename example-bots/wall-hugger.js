@@ -13,14 +13,13 @@ let botMemory = undefined;
 let hugWall = (vis, mem, wall, innerTurn, outerTurn) => {
     if (mem.justTurned) {
         mem.justTurned = false;
-        mem.sideBehind = true;
+        mem.sideBehind = !!vis.ahead[0][wall] || !!vis[wall + 'Ahead'];
         return ACTION.FORWARD;
     }
     let ahead = vis.ahead[0].ahead;
     let side = vis.ahead[0][wall];
     let sideBehind = mem.sideBehind;
     mem.sideBehind = side;
-    console.log(ahead, side, mem);
     if (side) {
         if (ahead) return outerTurn;
         else return ACTION.FORWARD;

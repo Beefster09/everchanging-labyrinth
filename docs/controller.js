@@ -82,7 +82,7 @@ const ADVENTURER_SHAPE = {
     ],
 };
 
-function renderGame(game, canvasDims, drawCtx, turnCounter, scoreTracker, force) {
+function renderGame(game, canvasDims, drawCtx, turnCounter, scoreTracker, manaTracker, force) {
     if (!game.dirty && !force) return;
     game.dirty = false;
 
@@ -91,6 +91,9 @@ function renderGame(game, canvasDims, drawCtx, turnCounter, scoreTracker, force)
     }
     if (scoreTracker) {
         scoreTracker.innerHTML = game.score;
+    }
+    if (manaTracker) {
+        manaTracker.innerHTML = game.mmMana;
     }
 
     const [fullWidth, fullHeight] = canvasDims;
@@ -196,9 +199,8 @@ function interactiveScheduler(speedControl, pausePlay, step) {
 
 
     function schedule(func) {
-        if (!func) return;
-        if (scheduleHandle) return scheduleHandle;
         next = func;
+        if (!func) return;
         if (!paused) {
             scheduleHandle = setTimeout(() => {
                 scheduleHandle = undefined;
@@ -235,6 +237,7 @@ function interactiveScheduler(speedControl, pausePlay, step) {
     step.addEventListener('click', ev => {
         if (!paused) {
             paused = true;
+            pausePlay.classList.add('paused');
             if (scheduleHandle) {
                 clearTimeout(scheduleHandle);
             }
@@ -263,8 +266,9 @@ function initPage() {
     let pausePlay = document.getElementById('pause-play');
     let stepBtn = document.getElementById('step-btn');
 
-    let scoreTracker = document.getElementById('score-tracker');
     let turnCounter = document.getElementById('turn-counter');
+    let scoreTracker = document.getElementById('score-tracker');
+    let manaTracker = document.getElementById('mana-tracker');
 
     let advCode = document.getElementById('new-adv-code');
     let mmCode = document.getElementById('new-mm-code');
@@ -273,7 +277,7 @@ function initPage() {
 
     function renderLoop() {
         if (currentGame) {
-            renderGame(currentGame, [width, height], drawCtx, turnCounter, scoreTracker);
+            renderGame(currentGame, [width, height], drawCtx, turnCounter, scoreTracker, manaTracker);
             requestAnimationFrame(renderLoop);
         }
     }
