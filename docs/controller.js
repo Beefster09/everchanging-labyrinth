@@ -4,7 +4,7 @@
 
 const MAZE_STYLE = {
     // colors
-    colors: {
+    lightColors: {
         background: '#F5F5F5',
         border: '#212121',
         walls: '#424242',
@@ -26,14 +26,38 @@ const MAZE_STYLE = {
         addedWall: '#2E7D32',
         removedWall: '#FFCA28',
     },
+    darkColors: {
+        background: '#212121',
+        border: '#F5F5F5',
+        walls: '#BDBDBD',
+        grid: '#424242',
+
+        adv1: '#f44336',
+        adv1Stroke: '#ffcdd2',
+        adv2VisibleCell: '#b71c1c',
+        adv2VisibleWall: '#ef9a9a',
+
+        adv2: '#2196F3',
+        adv2Stroke: '#BBDEFB',
+        adv2VisibleCell: '#0D47A1',
+        adv2VisibleWall: '#90CAF9',
+
+        advBothVisibleCell: '#4A148C',
+        advBothVisibleWall: '#CE93D8',
+
+        addedWall: '#A5D6A7',
+        removedWall: '#FFB300',
+    },
     lines: {
         border: 4,
         walls: 2,
         grid: 1,
         adv: 2,
     },
-    padding: 20
+    padding: 4
 };
+
+MAZE_STYLE.colors = MAZE_STYLE.lightColors;
 
 const ADVENTURER_SHAPE = {
     north: [
@@ -100,7 +124,7 @@ function renderGame(game, canvasDims, drawCtx, turnCounter, scoreTracker, force)
     drawCtx.strokeStyle = MAZE_STYLE.colors.walls;
     drawCtx.lineWidth = MAZE_STYLE.lines.walls;
     drawCtx.beginPath();
-    game.maze.forEach((row, rowIndex) => {
+    game.maze?.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
             if (cell.east) {
                 drawCtx.moveTo(left + (colIndex + 1) * cellSize, top + rowIndex * cellSize);
@@ -115,9 +139,10 @@ function renderGame(game, canvasDims, drawCtx, turnCounter, scoreTracker, force)
     drawCtx.stroke();
 
     // Draw the adventurers
-    const [advA, advB] = game.adv;
+    const [advA, advB] = game.adv ?? [undefined, undefined];
 
     function drawAdv(adv, points, drawProps) {
+        if (adv == undefined) return;
         Object.assign(drawCtx, drawProps ?? {});
         drawCtx.beginPath();
         let first = true;
@@ -131,8 +156,8 @@ function renderGame(game, canvasDims, drawCtx, turnCounter, scoreTracker, force)
     }
 
     drawAdv(
-        game.adv[0],
-        ADVENTURER_SHAPE[game.adv[0].dir],
+        advA,
+        ADVENTURER_SHAPE[advA?.dir],
         {
             fillStyle: MAZE_STYLE.colors.adv1,
             strokeStyle: MAZE_STYLE.colors.adv1Stroke,
@@ -140,8 +165,8 @@ function renderGame(game, canvasDims, drawCtx, turnCounter, scoreTracker, force)
         }
     );
     drawAdv(
-        game.adv[1],
-        ADVENTURER_SHAPE[game.adv[1].dir],
+        advB,
+        ADVENTURER_SHAPE[advB?.dir],
         {
             fillStyle: MAZE_STYLE.colors.adv2,
             strokeStyle: MAZE_STYLE.colors.adv2Stroke,
@@ -169,7 +194,6 @@ function interactiveScheduler(speedControl, pausePlay, step) {
     let next = undefined;
     let scheduleHandle = undefined;
 
-    pausePlay.value = '▏▏';
 
     function schedule(func) {
         if (!func) return;
@@ -184,17 +208,25 @@ function interactiveScheduler(speedControl, pausePlay, step) {
         }
     }
 
+    function cancel() {
+        next = undefined;
+        if (scheduleHandle) {
+            clearTimeout(scheduleHandle);
+            scheduleHandle = undefined;
+        }
+    }
+
     speedControl.addEventListener('input', ev => {delay = parseInt(ev.target.value)});
     pausePlay.addEventListener('click', ev => {
         if (paused) {
             paused = false;
-            pausePlay.value = '▏▏';
+            pausePlay.classList.remove('paused');
             scheduleHandle = undefined;
             next();
         }
         else {
             paused = true;
-            pausePlay.value = '►';
+            pausePlay.classList.add('paused');
             if (scheduleHandle) {
                 clearTimeout(scheduleHandle);
             }
@@ -203,7 +235,6 @@ function interactiveScheduler(speedControl, pausePlay, step) {
     step.addEventListener('click', ev => {
         if (!paused) {
             paused = true;
-            pausePlay.value = '►';
             if (scheduleHandle) {
                 clearTimeout(scheduleHandle);
             }
@@ -211,7 +242,7 @@ function interactiveScheduler(speedControl, pausePlay, step) {
         next();
     })
 
-    return schedule;
+    return [schedule, cancel];
 }
 
 function initPage() {
@@ -224,7 +255,7 @@ function initPage() {
     let currentGame = undefined;
 
     let seedInput = document.getElementById('seed-input');
-    let startButton = document.getElementById('start-button');
+    let startButton = document.getElementById('start-single-game');
     let advSelect = document.getElementById('adv-selector');
     let mmSelect = document.getElementById('mm-selector');
 
@@ -238,7 +269,7 @@ function initPage() {
     let advCode = document.getElementById('new-adv-code');
     let mmCode = document.getElementById('new-mm-code');
 
-    let sched = interactiveScheduler(delayControl, pausePlay, stepBtn);
+    let [sched, cancel] = interactiveScheduler(delayControl, pausePlay, stepBtn);
 
     function renderLoop() {
         if (currentGame) {
@@ -270,7 +301,72 @@ function initPage() {
         promise.catch(game => {currentGame = undefined})
 
         renderLoop();
-    })
+    });
+
+    for (let acc of document.getElementsByClassName('accordion')) {
+        let panel = acc.nextElementSibling;
+        if (acc.classList.contains('active')) {
+            panel.style.height = panel.scrollHeight + 'px';
+        }
+        else {
+            panel.style.height = '0px';
+        }
+        acc.addEventListener('click', ev => {
+            if (acc.classList.contains('active')) {
+                acc.classList.remove('active');
+                panel.style.height = '0px';
+            }
+            else {
+                acc.classList.add('active');
+                panel.style.height = panel.scrollHeight + 'px';
+            }
+        });
+        for (let textBox of panel.getElementsByTagName('textarea')) {
+            textBox.addEventListener('mouseup', ev => {
+                if (acc.classList.contains('active')) {
+                    panel.style.height = panel.scrollHeight + 'px';
+                }
+            })
+        }
+    };
+
+    document.getElementById('abandon-game').addEventListener('click', ev => {
+        if (currentGame == undefined) return;
+        if (window.confirm("Abandon currently running game?")) {
+            cancel();
+            currentGame = undefined;
+        }
+    });
+
+    document.getElementById('column-swapper').addEventListener('click', ev => {
+        let body = document.getElementById('everything');
+        if (body.classList.contains('flip-columns')) {
+            body.classList.remove('flip-columns');
+        }
+        else {
+            body.classList.add('flip-columns');
+        }
+    });
+
+    document.getElementById('theme-toggle').addEventListener('click', ev => {
+        let body = document.getElementById('everything');
+        if (body.classList.contains('light-mode')) {
+            body.classList.remove('light-mode');
+            body.classList.add('dark-mode');
+            MAZE_STYLE.colors = MAZE_STYLE.darkColors;
+        }
+        else {
+            body.classList.remove('dark-mode');
+            body.classList.add('light-mode');
+            MAZE_STYLE.colors = MAZE_STYLE.lightColors;
+        }
+        if (currentGame) {
+            renderLoop(true);
+        }
+        else {
+            drawCtx.clearRect(0, 0, width, height);
+        }
+    });
 }
 window.addEventListener('load',() => {
     var acc = document.getElementsByClassName("accordion");

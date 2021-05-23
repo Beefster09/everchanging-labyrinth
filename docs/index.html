@@ -7,59 +7,85 @@
     <script src="controller.js"></script>
     <link rel="stylesheet" href="style.css">
 </head>
-<body onload="initPage()">
-    <div class='play'>
-        <div class='header'>
-            <div id='game-controls'>
-                <div><span>Turn <span id="turn-counter">N/A</span></span></div>
-                <div><span>Score: <span id="score-tracker">N/A</span></span></div>
-                <div><label for="delay-control">Delay</label></div>
-                <div><input id="delay-control" type="number" min="0" max="10000" step="10" value="50">ms</div>
-                <div id="special"><input id="pause-play" type="button" value="Pause/Play"></div>
-                <div><input id="step-btn" type="button" value="Step"></div>
+<body id="everything" class="light-mode" onload="initPage()">
+    <div id="play-column">
+        <div id="game-controls">
+            <div>Turn <span id="turn-counter" class="counter">N/A</span></div>
+            <div>Score: <span id="score-tracker" class="counter">N/A</span></div>
+            <div>
+                <label for="delay-control">Delay</label>
+                <input id="delay-control" class="counter" type="number" min="0" max="10000" step="10" value="50">ms
+            </div>
+            <div class="playback-controls">
+                <button id="pause-play">
+                    <span class="play" >&#x25BA;</span>
+                    <span class="pause" style="transform: translateY(-0.075em);">&#x23F8;</span>
+                </button>
+                <button id="step-btn">
+                    <span>&#x1f846;</span>
+                </button>
+                <button id="abandon-game">
+                    <span>&#x274C;&#xFE0E;</span>
+                </button>
             </div>
         </div>
-        <canvas id="viewport" width="800" height="600" ></canvas> 
-    </div>  
-    <div id="single-game">
-        <button class='accordion'>Start Single Game</button>
-        <div class='panel'>
-            <label for="adv-selector">Adventurer:</label>
-            <select name="adventurer" id="adv-selector">
-                <option value=''><i>&lt;New Challenger&gt;</i></option>
-            </select><br>
+        <canvas id="viewport" width="800" height="800" ></canvas>
+    </div>
+    <div id="control-column">
+        <button class="accordion active">Single Game</button>
+        <div id="single-game" class='panel'>
+            <div>
+                <label for="adv-selector">Adventurer:</label>
+                <select name="adventurer" id="adv-selector">
+                    <option value=''><i>&lt;New Challenger&gt;</i></option>
+                </select>
+            </div>
 
-            <label name="mazemaster" for="mm-selector">Maze Master:</label>
-            <select id="mm-selector">
-                <option value=''><i>&lt;New Challenger&gt;</i></option>
-            </select><br>
+            <div>
+                <label name="mazemaster" for="mm-selector">Maze Master:</label>
+                <select id="mm-selector">
+                    <option value=''><i>&lt;New Challenger&gt;</i></option>
+                </select>
+            </div>
 
-            <label for="seed-input">Seed:</label>
-            <input id="seed-input" type="text" placeholder="<random>">
-            <input id="random-seed" type="button" value="Random Seed" onclick="document.getElementById('seed-input').value = genRandomSeed();" ><br>
-        <input id="start-button" type="button" value="Start" >
+            <div>
+                <label for="seed-input">Seed:</label>
+                <input id="seed-input" type="text" placeholder="<random>">
+                <button id="random-seed" onclick="document.getElementById('seed-input').value = genRandomSeed();">Random Seed</button>
+            </div>
+            <button id="start-single-game" class="start">Start</button>
         </div>
-        <button class='accordion'>Tournament</button>
-        <div id="tournament-controls" class='panel'>
-            Tournament not yet implemented
+
+        <button class="accordion">Tournament</button>
+        <div id="tournament-controls" class="panel">
+            <center><span class="note">Tournament not yet implemented</span></center>
         </div>
+
         <button class='accordion'>New Adventurers</button>
         <div id="new-adv" class="new-challenger panel">
-        <div>
-            <input type="button" value="Load Basic Template" onclick="loadSourceInto('./template-adventurers.js', document.getElementById('new-adv-code'));">
-            <input type="button" value="CLEAR" onclick="document.getElementById('new-adv-code').value = '';">
+            <div class="code-control">
+                <button onclick="loadSourceInto('./template-adventurers.js', document.getElementById('new-adv-code'));">Load Basic Template</button>
+                <button onclick="document.getElementById('new-adv-code').value = '';">CLEAR</button>
+            </div>
+            <textarea id="new-adv-code" placeholder="(Optional - type or paste function body to be tested here)" rows="30" cols="80">
+            </textarea>
         </div>
-        <textarea id="new-adv-code" placeholder="(Optional - type or paste function body to be tested here)" rows="30" cols="80">
-        </textarea></div>
-        <button class='accordion'>New Maze Master</button>
+
+        <button class="accordion">New Maze Master</button>
         <div id="new-mm" class="new-challenger panel">
-            <div>
-                <input type="button" value="Load Basic Template" onclick="loadSourceInto('./template-maze-master.js', document.getElementById('new-mm-code'));">
-                <input type="button" value="CLEAR" onclick="document.getElementById('new-mm-code').value = '';">
+            <div class="code-control">
+                <button onclick="loadSourceInto('./template-maze-master.js', document.getElementById('new-mm-code'));">Load Basic Template</button>
+                <button onclick="document.getElementById('new-mm-code').value = '';">CLEAR</button>
             </div>
             <textarea id="new-mm-code" placeholder="(Optional - type or paste function body to be tested here)" rows="30" cols="80">
             </textarea>
         </div>
+
+        <button id="column-swapper">Change Column Order</button>
     </div>
+    <button id="theme-toggle">
+        <span class="sun">&#x2600;&#xFE0E;</span>
+        <span class="moon">&#x1F319;&#xFE0E;</span>
+    </button>
 </body>
 </html>
