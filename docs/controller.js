@@ -30,7 +30,7 @@ const MAZE_STYLE = {
         background: '#212121',
         border: '#F5F5F5',
         walls: '#BDBDBD',
-        grid: '#9E9E9E',
+        grid: '#424242',
 
         adv1: '#f44336',
         adv1Stroke: '#ffcdd2',
@@ -54,7 +54,7 @@ const MAZE_STYLE = {
         grid: 1,
         adv: 2,
     },
-    padding: 20
+    padding: 4
 };
 
 MAZE_STYLE.colors = MAZE_STYLE.lightColors;
@@ -124,7 +124,7 @@ function renderGame(game, canvasDims, drawCtx, turnCounter, scoreTracker, force)
     drawCtx.strokeStyle = MAZE_STYLE.colors.walls;
     drawCtx.lineWidth = MAZE_STYLE.lines.walls;
     drawCtx.beginPath();
-    game.maze.forEach((row, rowIndex) => {
+    game.maze?.forEach((row, rowIndex) => {
         row.forEach((cell, colIndex) => {
             if (cell.east) {
                 drawCtx.moveTo(left + (colIndex + 1) * cellSize, top + rowIndex * cellSize);
@@ -139,9 +139,10 @@ function renderGame(game, canvasDims, drawCtx, turnCounter, scoreTracker, force)
     drawCtx.stroke();
 
     // Draw the adventurers
-    const [advA, advB] = game.adv;
+    const [advA, advB] = game.adv ?? [undefined, undefined];
 
     function drawAdv(adv, points, drawProps) {
+        if (adv == undefined) return;
         Object.assign(drawCtx, drawProps ?? {});
         drawCtx.beginPath();
         let first = true;
@@ -155,8 +156,8 @@ function renderGame(game, canvasDims, drawCtx, turnCounter, scoreTracker, force)
     }
 
     drawAdv(
-        game.adv[0],
-        ADVENTURER_SHAPE[game.adv[0].dir],
+        advA,
+        ADVENTURER_SHAPE[advA?.dir],
         {
             fillStyle: MAZE_STYLE.colors.adv1,
             strokeStyle: MAZE_STYLE.colors.adv1Stroke,
@@ -164,8 +165,8 @@ function renderGame(game, canvasDims, drawCtx, turnCounter, scoreTracker, force)
         }
     );
     drawAdv(
-        game.adv[1],
-        ADVENTURER_SHAPE[game.adv[1].dir],
+        advB,
+        ADVENTURER_SHAPE[advB?.dir],
         {
             fillStyle: MAZE_STYLE.colors.adv2,
             strokeStyle: MAZE_STYLE.colors.adv2Stroke,
@@ -193,8 +194,6 @@ function interactiveScheduler(speedControl, pausePlay, step) {
     let next = undefined;
     let scheduleHandle = undefined;
 
-    pausePlay.value = 'Pause';
-
     function schedule(func) {
         if (!func) return;
         if (scheduleHandle) return scheduleHandle;
@@ -208,17 +207,25 @@ function interactiveScheduler(speedControl, pausePlay, step) {
         }
     }
 
+    function cancel() {
+        next = undefined;
+        if (scheduleHandle) {
+            clearTimeout(scheduleHandle);
+            scheduleHandle = undefined;
+        }
+    }
+
     speedControl.addEventListener('input', ev => {delay = parseInt(ev.target.value)});
     pausePlay.addEventListener('click', ev => {
         if (paused) {
             paused = false;
-            pausePlay.value = 'Pause';
+            pausePlay.classList.remove('paused');
             scheduleHandle = undefined;
             next();
         }
         else {
             paused = true;
-            pausePlay.value = 'Play';
+            pausePlay.classList.add('paused');
             if (scheduleHandle) {
                 clearTimeout(scheduleHandle);
             }
@@ -227,7 +234,6 @@ function interactiveScheduler(speedControl, pausePlay, step) {
     step.addEventListener('click', ev => {
         if (!paused) {
             paused = true;
-            pausePlay.value = 'Play';
             if (scheduleHandle) {
                 clearTimeout(scheduleHandle);
             }
@@ -235,7 +241,7 @@ function interactiveScheduler(speedControl, pausePlay, step) {
         next();
     })
 
-    return schedule;
+    return [schedule, cancel];
 }
 
 function initPage() {
@@ -262,7 +268,7 @@ function initPage() {
     let advCode = document.getElementById('new-adv-code');
     let mmCode = document.getElementById('new-mm-code');
 
-    let sched = interactiveScheduler(delayControl, pausePlay, stepBtn);
+    let [sched, cancel] = interactiveScheduler(delayControl, pausePlay, stepBtn);
 
     function renderLoop() {
         if (currentGame) {
@@ -323,6 +329,14 @@ function initPage() {
         }
     };
 
+    document.getElementById('abandon-game').addEventListener('click', ev => {
+        if (currentGame == undefined) return;
+        if (window.confirm("Abandon currently running game?")) {
+            cancel();
+            currentGame = undefined;
+        }
+    });
+
     document.getElementById('column-swapper').addEventListener('click', ev => {
         let body = document.getElementById('everything');
         if (body.classList.contains('flip-columns')) {
@@ -344,6 +358,12 @@ function initPage() {
             body.classList.remove('dark-mode');
             body.classList.add('light-mode');
             MAZE_STYLE.colors = MAZE_STYLE.lightColors;
+        }
+        if (currentGame) {
+            renderLoop(true);
+        }
+        else {
+            drawCtx.clearRect(0, 0, width, height);
         }
     });
 }

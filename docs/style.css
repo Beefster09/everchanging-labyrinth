@@ -16,6 +16,18 @@ body div {
     position: relative;
 }
 
+button {
+    line-height: 100%;
+    vertical-align: middle;
+}
+
+input[type="number"] {
+    padding: 0;
+    border: none;
+    font-family: monospace;
+    font-size: 1em;
+}
+
 .start {
     font-size: 1.3rem;
     font-variant: small-caps;
@@ -29,18 +41,37 @@ body div {
     padding: 0.5em 1.5em;
 }
 
-.counter {
-    font-family: monospace;
-    font-size: 1rem;
-}
-
-input[type="number"].counter {
-    padding: 0;
-    border: none;
+#game-controls {
+    display: flex;
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom-width: 1px;
+    border-bottom-style: solid;
 }
 
 #delay-control {
     width: 4em;
+}
+
+.playback-controls button {
+    font-size: 1.5rem;
+    width: 2.5rem;
+    height: 2rem;
+    padding: 0;
+}
+
+.playback-controls button span {
+    display: block;
+    margin: auto;
+}
+
+#pause-play:not(.paused) .play {
+    display: none;
+}
+
+#pause-play.paused .pause {
+    display: none;
 }
 
 #control-column {
@@ -48,6 +79,7 @@ input[type="number"].counter {
     top: 0px;
     height: 100%;
     overflow-y: auto;
+    margin: 0;
 }
 
 body:not(.flip-columns) #control-column {
@@ -58,23 +90,6 @@ body:not(.flip-columns) #control-column {
 body.flip-columns #control-column {
     border-right-width: 1px;
     border-right-style: solid;
-}
-
-#control-column {
-    margin: 0;
-}
-
-#game-controls {
-    display: flex;
-    flex-direction: right;
-    justify-content: space-between;
-    border-bottom-width: 1px;
-    border-bottom-style: solid;
-}
-
-#game-controls * {
-    line-height: 100%;
-    vertical-align: middle;
 }
 
 .accordion {
@@ -120,6 +135,10 @@ body.flip-columns #control-column {
 
 .panel * {
     margin: 0;
+}
+
+.code-control {
+    margin: 0.1rem 0;
 }
 
 textarea {
@@ -196,7 +215,12 @@ body.light-mode select {
     border: 1px solid #607D8B;
 }
 
-body.light-mode button:not(.accordion):hover {
+body.light-mode textarea {
+    color: black;
+}
+
+body.light-mode button:not(.accordion):hover,
+body.light-mode select:hover {
     background-color: #B0BEC5;
     border: 1px solid #546E7A;
 }
@@ -215,6 +239,51 @@ body.light-mode button#theme-toggle .sun {
 
 body.light-mode button#theme-toggle .moon {
     color: #F5F5F5;
+}
+
+body.light-mode #pause-play {
+    background-color: #4CAF50;
+    border-color: #2E7D32;
+}
+
+body.light-mode #pause-play:hover {
+    background-color: #388E3C;
+    border-color: #1B5E20;
+}
+
+body.light-mode #pause-play:active {
+    background-color: #C0CA33;
+    border-color: #9E9D24;
+}
+
+body.light-mode #step-btn {
+    background-color: #2196F3;
+    border-color: #1565C0;
+}
+
+body.light-mode #step-btn:hover {
+    background-color: #1976D2;
+    border-color: #0D47A1;
+}
+
+body.light-mode #step-btn:active {
+    background-color: #00ACC1;
+    border-color: #00838F;
+}
+
+body.light-mode #abandon-game {
+    background-color: #f44336;
+    border-color: #c62828;
+}
+
+body.light-mode #abandon-game:hover {
+    background-color: #d32f2f;
+    border-color: #b71c1c;
+}
+
+body.light-mode #abandon-game:active {
+    background-color: #FFEB3B;
+    border-color: #F57F17;
 }
 
 /* Dark Mode Colors */
@@ -244,8 +313,7 @@ body.dark-mode select
     background-color: #212121;
 }
 
-body.dark-mode textarea:hover,
-body.dark-mode input:hover,
+body.dark-mode button:not(.accordion):hover,
 body.dark-mode select:hover
 {
     border-color: #90A4AE;
@@ -274,4 +342,49 @@ body.dark-mode button#theme-toggle .sun {
 
 body.dark-mode button#theme-toggle .moon {
     display: none;
+}
+
+body.dark-mode #pause-play {
+    background-color: #4CAF50;
+    border-color: #C8E6C9;
+}
+
+body.dark-mode #pause-play:hover {
+    background-color: #81C784;
+    border-color: #E8F5E9;
+}
+
+body.dark-mode #pause-play:active {
+    background-color: #C0CA33;
+    border-color: #9E9D24;
+}
+
+body.dark-mode #step-btn {
+    background-color: #2196F3;
+    border-color: #BBDEFB;
+}
+
+body.dark-mode #step-btn:hover {
+    background-color: #64B5F6;
+    border-color: #E3F2FD;
+}
+
+body.dark-mode #step-btn:active {
+    background-color: #4DD0E1;
+    border-color: #B2EBF2;
+}
+
+body.dark-mode #abandon-game {
+    background-color: #f44336;
+    border-color: #ffcdd2;
+}
+
+body.dark-mode #abandon-game:hover {
+    background-color: #e57373;
+    border-color: #ffebee;
+}
+
+body.dark-mode #abandon-game:active {
+    background-color: #FFEB3B;
+    border-color: #e57373;
 }

@@ -17,11 +17,19 @@
                 <input id="delay-control" class="counter" type="number" min="0" max="10000" step="10" value="50">ms
             </div>
             <div class="playback-controls">
-                <button id="pause-play">Pause/Play</button>
-                <button id="step-btn">Step</button>
+                <button id="pause-play">
+                    <span class="play" >&#x25BA;</span>
+                    <span class="pause" style="transform: translateY(-0.075em);">&#x23F8;</span>
+                </button>
+                <button id="step-btn">
+                    <span>&#x1f846;</span>
+                </button>
+                <button id="abandon-game">
+                    <span>&#x274C;&#xFE0E;</span>
+                </button>
             </div>
         </div>
-        <canvas id="viewport" width="800" height="600" ></canvas>
+        <canvas id="viewport" width="800" height="800" ></canvas>
     </div>
     <div id="control-column">
         <button class="accordion active">Single Game</button>
@@ -55,7 +63,7 @@
 
         <button class='accordion'>New Adventurers</button>
         <div id="new-adv" class="new-challenger panel">
-            <div>
+            <div class="code-control">
                 <button onclick="loadSourceInto('./template-adventurers.js', document.getElementById('new-adv-code'));">Load Basic Template</button>
                 <button onclick="document.getElementById('new-adv-code').value = '';">CLEAR</button>
             </div>
@@ -65,7 +73,7 @@
 
         <button class="accordion">New Maze Master</button>
         <div id="new-mm" class="new-challenger panel">
-            <div>
+            <div class="code-control">
                 <button onclick="loadSourceInto('./template-maze-master.js', document.getElementById('new-mm-code'));">Load Basic Template</button>
                 <button onclick="document.getElementById('new-mm-code').value = '';">CLEAR</button>
             </div>

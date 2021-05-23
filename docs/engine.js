@@ -141,15 +141,39 @@ const WALLS_BY_DIR = {
     },
 };
 
-function botCall(thunk, name) {
-    const before = performance.now();
-    try {
-        var ret = thunk();
+function wrapBot(factory, randomFunc, methods) {
+    const name = factory.botName;
+    let localLogs = [];
+    let localMath = Object.create(Math);
+    localMath.random = randomFunc;
+    function wrapMethod(boundMethod) {
+        return (...args) => {
+            const before = performance.now();
+            let elapsed = Math.Infinity;
+            try {
+                var ret = boundMethod(...args);
+            }
+            catch (err) {
+                console.error(err);
+                throw new Strike(`${err.name} in ${name}: ${err.message}`, name);
+            }
+            finally {
+                elapsed = performance.now() - before;
+                for (let args of localLogs.splice(0)) {
+                    console.log(...args);
+                }
+            }
+            return [ret, elapsed];
+        };
     }
-    catch (err) {
-        throw new Strike(`${err.name} in ${name}: ${err.message}`, name);
+    let botObj = factory(randomFunc, localMath, localLogs);
+    let wrapper = {
+        name: factory.botName
     }
-    return [ret, performance.now() - before];
+    for (let method of methods) {
+        wrapper[method] = wrapMethod(botObj[method].bind(botObj));
+    }
+    return wrapper;
 }
 
 class Game {
@@ -159,13 +183,21 @@ class Game {
             console.log("No random seed was given! Using " + randomSeed);
         }
 
-        this.mmBot = mmFactory(seededRandom(randomSeed + ':M'));
-        this.mmBotName = mmFactory.botName;
+        this.logs = [];
+
+        this.mmBot = wrapBot(
+            mmFactory,
+            seededRandom(randomSeed + ':M'),
+            ['generateMaze', 'takeTurn']
+        );
         this.mmCompute = 0;
         this.mmMana = 0;
 
-        this.advBot = advFactory(seededRandom(randomSeed + ':A'));
-        this.advBotName = advFactory.botName;
+        this.advBot = wrapBot(
+            advFactory,
+            seededRandom(randomSeed + ':A'),
+            ['startRound', 'takeTurn']
+        );
         this.advCompute = 0;
         this.adv = undefined;
 
@@ -185,37 +217,37 @@ class Game {
         this.dirty = true;
         this.mazeSize++;
         const mmTimeLimit = this.mazeSize * this.mazeSize * GEN_COMPUTE_FACTOR;
-        const [returnedBoard, genDuration] = botCall(() => this.mmBot.generateMaze(this.mazeSize), this.mmBotName);
+        const [returnedBoard, genDuration] = this.mmBot.generateMaze(this.mazeSize);
         if (genDuration > mmTimeLimit) {
             throw new Strike(
-                `${this.mmBotName}.generateMaze() took too long to execute (time limit is ${mmTimeLimit}ms)`
+                `${this.mmBot.name}.generateMaze() took too long to execute (time limit is ${mmTimeLimit}ms)`
             )
         }
 
         if (returnedBoard.length != this.mazeSize) {
             throw new Strike(
-                `Maze returned by ${this.mmBotName}.generateMaze() has an incorrect number of rows.`
+                `Maze returned by ${this.mmBot.name}.generateMaze() has an incorrect number of rows.`
                 + ` (Expected ${this.mazeSize} rows, got ${returnedBoard.length} rows)\n`
                 + JSON.stringify(returnedBoard, null, '\t'),
-                this.mmBotName
+                this.mmBot.name
             )
         }
 
         this.maze = returnedBoard.map((row, rowIndex) => {
             if (row.length != this.mazeSize) {
                 throw new Strike(
-                    `Row ${rowIndex} of maze returned by ${this.mmBotName}.generateMaze() has an incorrect number of cells.`
+                    `Row ${rowIndex} of maze returned by ${this.mmBot.name}.generateMaze() has an incorrect number of cells.`
                     + ` (Expected ${this.mazeSize} cells, got ${row.length} cells)\n`
                     + JSON.stringify(returnedBoard, null, '\t'),
-                    this.mmBotName
+                    this.mmBot.name
                 )
             }
             return row.map((cell, cellIndex) => {
                 if (cellIndex + 1 < this.mazeSize && !cell.hasOwnProperty('east')) {
-                    throw new Strike("bleh", this.mmBotName);
+                    throw new Strike("bleh", this.mmBot.name);
                 }
                 if (rowIndex + 1 < this.mazeSize && !cell.hasOwnProperty('south')) {
-                    throw new Strike("bleh", this.mmBotName);
+                    throw new Strike("bleh", this.mmBot.name);
                 }
                 return {
                     east: (cellIndex + 1 < this.mazeSize)? !!cell.east : null,
@@ -228,17 +260,17 @@ class Game {
 
         if (!this.mazeIsFullyConnected()) {
             throw new Strike(
-                `Maze returned by ${this.mmBotName}.generateMaze() is not fully-connected\n`
+                `Maze returned by ${this.mmBot.name}.generateMaze() is not fully-connected\n`
                 + JSON.stringify(returnedBoard, null, '\t'),
-                this.mmBotName
+                this.mmBot.name
             );
         }
 
-        const advDuration = botCall(() => this.advBot.startRound(this.mazeSize), this.advBotName)[1];
+        const advDuration = this.advBot.startRound(this.mazeSize)[1];
         if (advDuration > ADV_START_ROUND_COMPUTE) {
             throw new Strike(
-                `${this.advBotName}.startRound() took too long to execute (time limit is ${ADV_START_ROUND_COMPUTE}ms, but it took ${advDuration}ms)`,
-                this.advBotName
+                `${this.advBot.name}.startRound() took too long to execute (time limit is ${ADV_START_ROUND_COMPUTE}ms, but it took ${advDuration}ms)`,
+                this.advBot.name
             );
         }
 
@@ -270,12 +302,12 @@ class Game {
             this.calculateVision(this.adv[0], this.adv[1]),
             this.calculateVision(this.adv[1], this.adv[0]),
         ];
-        const [moves, advTime] = botCall(() => this.advBot.takeTurn(vision), this.advBotName);
+        const [moves, advTime] = this.advBot.takeTurn(vision);
         this.advCompute += TURN_COMPUTE - advTime;
         if (this.advCompute < 0) {
             throw new Strike(
-                `${this.advBotName} exceeded its compute quota`,
-                this.advBotName
+                `${this.advBot.name} exceeded its compute quota`,
+                this.advBot.name
             );
         }
 
@@ -287,7 +319,6 @@ class Game {
                     const [or, oc] = OFFSET_BY_DIR[dir];
 
                     if (this.checkWall(row + dr, col + dc, dw)) {
-                        console.log(`${this.advBotName} (${'AB'[i]}) bumped into a wall!`);
                         return
                     }
 
@@ -331,23 +362,20 @@ class Game {
                     })
                 )
             );
-            const [[removeWall, addWall], mmTime] = botCall(
-                () => this.mmBot.takeTurn(this.mmMana, mazeWithCost),
-                this.mmBotName
-            );
+            const [[removeWall, addWall], mmTime] = this.mmBot.takeTurn(this.mmMana, mazeWithCost);
             this.mmCompute += TURN_COMPUTE - mmTime;
             if (this.mmCompute < 0) {
                 throw new Strike(
-                    `${this.mmBotName} exceeded its compute quota`,
-                    this.mmBotName
+                    `${this.mmBot.name} exceeded its compute quota`,
+                    this.mmBot.name
                 );
             }
 
             if (!this.mazeIsFullyConnected()) {
                 throw new Strike(
-                    `Maze modified by ${this.mmBotName}.takeTurn() is not fully-connected\n`
+                    `Maze modified by ${this.mmBot.name}.takeTurn() is not fully-connected\n`
                     + JSON.stringify(returnedBoard, null, '\t'),
-                    this.mmBotName
+                    this.mmBot.name
                 );
             }
 
@@ -465,9 +493,10 @@ const BOT_HEADER = ( // Code header to make most obvious rulebreaking less conve
     + 'const window = undefined;'
     + 'const globalThis = undefined;'
     + 'const document = undefined;'
-    + 'Math = Object.create(Math);'
-    + 'Math.random = random;'
     + 'const setTimeout = () => undefined;'
+    + 'const console = {'
+        + 'log: (...args) => _logs_.push(args)'
+    + '};'
 )
 const MAZE_MASTER = 0;
 const ADVENTURERS = 1;
@@ -487,7 +516,7 @@ class GameManager {
         const concatenated = BOT_HEADER + sourceCode;
         let factory = undefined;
         try {
-            factory = new Function('random', concatenated);
+            factory = new Function('random', 'Math', '_logs_', concatenated);
         }
         catch (err) {
             console.log(concatenated);
