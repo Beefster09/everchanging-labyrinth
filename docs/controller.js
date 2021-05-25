@@ -50,7 +50,7 @@ const MAZE_STYLE = {
     },
     lines: {
         border: 4,
-        walls: 3,
+        walls: 2,
         grid: 1,
         adv: 2,
     },
@@ -196,6 +196,7 @@ function interactiveScheduler(speedControl, pausePlay, step) {
     let delay = parseInt(speedControl.value);
     let next = undefined;
     let scheduleHandle = undefined;
+
 
     function schedule(func) {
         next = func;
@@ -370,4 +371,14 @@ function initPage() {
             drawCtx.clearRect(0, 0, width, height);
         }
     });
+    function resizeHandler(){
+        var canvas = document.querySelector('#viewport')
+        canvas.style.height = innerHeight - 60 + 'px';
+        canvas.style.width = innerHeight - 60 + 'px';
+        canvas.style.left = (900 - innerHeight) / 2 + 'px';
+        canvas.style.top = '0px';
+    }
+    resizeHandler()
+    window.addEventListener('resize',resizeHandler);
 }
+

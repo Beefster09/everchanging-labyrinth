@@ -19,18 +19,20 @@
             </div>
             <div class="playback-controls">
                 <button id="pause-play">
-                    <span class="play" >&#x25BA;</span>
-                    <span class="pause" style="transform: translateY(-0.075em);">&#x23F8;</span>
+                    <span class="play" title="play">▶️</span>
+                    <span class="pause" title="pause">&#x23F8;</span>
                 </button>
-                <button id="step-btn">
-                    <span>&#x1f846;</span>
+                <button id="step-btn" title="step">
+                    <span>⏩</span>
                 </button>
-                <button id="abandon-game">
-                    <span>&#x274C;&#xFE0E;</span>
+                <button id="abandon-game" title="Abandon game">
+                    <span style="color: white; font-size: 46px; transform:translateY(-3px)">&times;</span>
                 </button>
             </div>
         </div>
-        <canvas id="viewport" width="800" height="800" ></canvas>
+        <div class='canvas-container'>
+            <canvas id="viewport" width="800" height="800" ></canvas>
+        </div>
     </div>
     <div id="control-column">
         <button class="accordion active">Single Game</button>
@@ -59,7 +61,7 @@
 
         <button class="accordion">Tournament</button>
         <div id="tournament-controls" class="panel">
-            <center><span class="note">Tournament not yet implemented</span></center>
+            <p style="text-align: center;"><span class="note">Tournament not yet implemented</span></p>
         </div>
 
         <button class='accordion'>New Adventurers</button>
@@ -85,7 +87,7 @@
         <button id="column-swapper">Change Column Order</button>
     </div>
     <button id="theme-toggle">
-        <span class="sun">&#x2600;&#xFE0E;</span>
+        <span class="sun" style="font-size: 60px;">&#x2600;&#xFE0E;</span>
         <span class="moon">&#x1F319;&#xFE0E;</span>
     </button>
 </body>

@@ -20,7 +20,6 @@ button {
     line-height: 100%;
     vertical-align: middle;
 }
-
 input[type="number"] {
     padding: 0;
     border: none;
@@ -160,6 +159,7 @@ textarea {
 .note {
     font-style: italic;
     opacity: 0.5;
+    justify-content: center;
 }
 
 #column-swapper {
@@ -348,7 +348,9 @@ body.dark-mode button#theme-toggle .sun {
 body.dark-mode button#theme-toggle .moon {
     display: none;
 }
-
+body.dark-mode #delay-control {
+    border: 1px solid white;
+}
 body.dark-mode #pause-play {
     background-color: #4CAF50;
     border-color: #C8E6C9;
@@ -392,4 +394,16 @@ body.dark-mode #abandon-game:hover {
 body.dark-mode #abandon-game:active {
     background-color: #FFEB3B;
     border-color: #e57373;
+}
+
+#viewport{
+    padding: none;
+    display: block;
+    position: absolute;
+    box-sizing: border-box;
+}
+.canvas-container{
+    width: 850px;
+    height: calc(100vh - 60px);
+    padding-bottom: 0px !important;
 }
